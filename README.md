@@ -1,84 +1,85 @@
-# just-x
+# ⚡ just-x
 
-Extended recipe names for [just](https://github.com/casey/just).
+[![Shell: bash | zsh](https://img.shields.io/badge/shell-bash%20%7C%20zsh-green.svg)](#requirements)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-`just` is a fantastic command runner — simple, fast, and rock-solid. It intentionally doesn't allow `:`, `!`, `?` in recipe names ([#2587](https://github.com/casey/just/issues/2587), [#2669](https://github.com/casey/just/issues/2669)), and the maintainer's focus on stability and a clean syntax is totally fair. Rather than forking or requesting changes, `just-x` takes the lightweight approach: a thin shell wrapper that adds expressive recipe names via convention-based character substitution.
+> Use `!`, `?`, and `:` in [just](https://github.com/casey/just) recipe names.
 
+[`just`](https://github.com/casey/just) keeps recipe names clean and simple by design — no `!`, `?`, or `:` allowed ([#2587](https://github.com/casey/just/issues/2587), [#2669](https://github.com/casey/just/issues/2669)). `just-x` is a thin shell wrapper that adds them back via convention-based character substitution.
+
+```bash
+just lint:frontend   # runs → just lint--frontend
+just lint:go         # runs → just lint--go
+just build!          # runs → just build-x
+just ready?          # runs → just ready-q
+just test            # unchanged
 ```
-just build            →  just build
-just build!           →  just build-x        # force rebuild, clean & build
 
-just lint:go          →  just lint--go
-just lint:frontend    →  just lint--frontend  # namespaced recipe groups
-
-just deploy           →  just deploy
-just deploy?          →  just deploy-q       # dry-run, what would happen?
-```
-
-Write expressive recipe names in your terminal. `just-x` translates them to valid justfile names behind the scenes.
-
-## Installation
-
-### One-liner
+## 🚀 Install
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/amberpixels/just-x/main/install.sh | bash
 ```
 
-### From a local clone
+Restart your shell. Done — `just` now supports extended recipe names.
+
+<details>
+<summary>Other install methods</summary>
+
+**From source:**
 
 ```bash
 git clone https://github.com/amberpixels/just-x.git
-cd just-x
-./install.sh
+cd just-x && ./install.sh
 ```
 
-Both methods will:
-- Install `just-x` to `~/.local/bin/`
-- Add `~/.local/bin` to your `PATH` (if needed)
-- Add `eval "$(just-x init)"` to your shell rc file
-
-After install, restart your shell and `just` will support extended recipe names.
-
-### Custom function name
-
-By default `just-x init` creates a function named `just` (overrides `just` itself). You can use a custom name instead:
+**Manual:**
 
 ```bash
-eval "$(just-x init j)"    # use j as the command
-eval "$(just-x init jj)"   # use jj as the command
+cp just-x ~/.local/bin/
+echo 'eval "$(just-x init)"' >> ~/.zshrc
 ```
 
-## How it works
+</details>
 
-| You type     | Justfile recipe | Default mapping |
-|-------------|----------------|-----------------|
-| `just dev!`      | `dev-x`        | `!` → `-x`     |
-| `just ready?`    | `ready-q`      | `?` → `-q`     |
-| `just app:build` | `app--build`   | `:` → `--`     |
+## 🔀 How it works
 
-## Examples
+| You type | Runs | Mapping |
+|---|---|---|
+| `just app:build` | `just app--build` | `:` → `--` |
+| `just dev!` | `just dev-x` | `!` → `-x` |
+| `just ready?` | `just ready-q` | `?` → `-q` |
 
-```bash
-# In your justfile, name recipes with the convention:
-# dev-x:        (maps from dev!)
-# deploy-x:     (maps from deploy!)
-# ready-q:      (maps from ready?)
-# app--build:   (maps from app:build)
+Name your justfile recipes using the mapped form, type the expressive form in the terminal:
 
-just dev!              # runs: just dev-x
-just deploy! staging   # runs: just deploy-x staging
-just ready?            # runs: just ready-q
-just app:build         # runs: just app--build
+```justfile
+# justfile
 
-# Regular recipes pass through unchanged
-just test              # runs: just test
-just --list            # runs: just --list
+lint--go:           # ← call with: just lint:go
+    golangci-lint run
+
+lint--frontend:     # ← call with: just lint:frontend
+    eslint src/
+
+build:              # regular build
+    cargo build
+
+build-x:            # ← call with: just build!  (force rebuild, skip cache)
+    cargo build --release --force
+
+deploy:             # deploy with confirmation prompt
+    ./deploy.sh --confirm
+
+deploy-x:           # ← call with: just deploy!  (skip confirmation, YOLO)
+    ./deploy.sh --yes
+
+ready-q:            # ← call with: just ready?  (check if ready to deploy)
+    ./check-deps.sh && ./check-env.sh
 ```
 
-## Configuration
+## ⚙️ Configuration
 
-Override the default mappings with environment variables:
+Override mappings via environment variables (set before the `eval` line in your rc file):
 
 ```bash
 export JUST_X_BANG="-x"       # ! replacement (default: -x)
@@ -86,15 +87,23 @@ export JUST_X_QUESTION="-q"   # ? replacement (default: -q)
 export JUST_X_COLON="--"      # : replacement (default: --)
 ```
 
-## Commands
+By default, `just-x init` creates a function named `just`. Use a custom name:
 
 ```bash
-just-x init [name]         # Generate shell function (default: just)
-just-x translate <recipe>  # Show translation (for debugging)
-just-x version             # Print version
-just-x help                # Show help
+eval "$(just-x init j)"    # use j instead
 ```
 
-## License
+## 🗑️ Uninstall
 
-MIT
+```bash
+curl -fsSL https://raw.githubusercontent.com/amberpixels/just-x/main/uninstall.sh | bash
+```
+
+## 📋 Requirements
+
+- [just](https://github.com/casey/just)
+- Bash or Zsh
+
+## 📄 License
+
+[MIT](LICENSE)
