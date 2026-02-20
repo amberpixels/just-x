@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+VERSION="0.1.0"
+
+usage() {
+  cat <<'EOF'
+just-x — Extended recipe names for just
+
+Usage:
+  just-x init [name]         Generate shell function (default name: just)
+  just-x translate <recipe>  Show how a recipe name gets translated
+  just-x version             Print version
+  just-x help                Show this help
+
+Setup (add to ~/.zshrc or ~/.bashrc):
+  eval "$(just-x init)"
+
+Examples:
+  just dev!          → just dev-x
+  just ready?        → just ready-q
+  just app:build     → just app--build
+
+Configuration (env vars):
+  JUST_X_BANG="-x"       # ! replacement (default: -x)
+  JUST_X_QUESTION="-q"   # ? replacement (default: -q)
+  JUST_X_COLON="--"      # : replacement (default: --)
+EOF
+}
+
+cmd_init() {
+  local name="${1:-just}"
+  cat <<EOF
+_just_x_${name}() {
+  local cmd="\${1:-}"
+  if [[ -z "\$cmd" || "\$cmd" != *['!?:']* ]]; then
+    command just "\$@"
+    return
+  fi
+  shift
+  cmd="\${cmd//\!/\${JUST_X_BANG:--x}}"
+  cmd="\${cmd//\?/\${JUST_X_QUESTION:--q}}"
+  cmd="\${cmd//\:/\${JUST_X_COLON:---}}"
+  command just "\$cmd" "\$@"
+}
+alias ${name}='noglob _just_x_${name}'
+EOF
+}
+
+translate() {
+  local recipe="${1:?Usage: just-x translate <recipe>}"
+  local result="$recipe"
+  result="${result//\!/${JUST_X_BANG:--x}}"
+  result="${result//\?/${JUST_X_QUESTION:--q}}"
+  result="${result//\:/${JUST_X_COLON:---}}"
+  echo "${recipe} → ${result}"
+}
+
+case "${1:-help}" in
+  init)      shift; cmd_init "$@" ;;
+  translate) shift; translate "$@" ;;
+  version)   echo "just-x $VERSION" ;;
+  help|--help|-h) usage ;;
+  *)         echo "Unknown command: $1" >&2; usage >&2; exit 1 ;;
+esac
