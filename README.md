@@ -102,7 +102,7 @@ curl -fsSL https://raw.githubusercontent.com/amberpixels/just-x/main/uninstall.s
 
 ## 📋 Requirements
 
-- [just](https://github.com/casey/just)
+- [just 😸](https://github.com/casey/just)
 - Bash or Zsh
 
 ## 📄 License
