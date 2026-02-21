@@ -3,6 +3,39 @@ set -euo pipefail
 
 VERSION="0.1.0"
 
+# Generates a shell function (+ noglob alias) that wraps `just` with character translation.
+# The generated function is meant to be eval'd in the user's shell rc file.
+cmd_init() {
+  local name="${1:-just}"
+  cat <<EOF
+_just_x_${name}() {
+  local cmd="\${1:-}"
+
+  # Intercept --list/-l/--summary and reverse-translate output
+  for arg in "\$@"; do
+    case "\$arg" in
+      --list|-l|--summary)
+        just-x list "\$@"
+        return
+        ;;
+    esac
+  done
+
+  if [[ -z "\$cmd" || "\$cmd" != *['!?:']* ]]; then
+    command just "\$@"
+    return
+  fi
+  shift
+  cmd="\${cmd//\!/\${JUST_X_BANG:--x}}"
+  cmd="\${cmd//\?/\${JUST_X_QUESTION:--q}}"
+  cmd="\${cmd//\:/\${JUST_X_COLON:---}}"
+  command just "\$cmd" "\$@"
+}
+alias ${name}='noglob _just_x_${name}'
+EOF
+}
+
+# Prints help text with usage examples and configuration options.
 usage() {
   cat <<'EOF'
 just-x — Extended recipe names for just
@@ -28,6 +61,18 @@ Configuration (env vars):
 EOF
 }
 
+# Shows how a recipe name gets translated (e.g. "dev!" → "dev-x").
+translate() {
+  local recipe="${1:?Usage: just-x translate <recipe>}"
+  local result="$recipe"
+  result="${result//\!/${JUST_X_BANG:--x}}"
+  result="${result//\?/${JUST_X_QUESTION:--q}}"
+  result="${result//\:/${JUST_X_COLON:---}}"
+  echo "${recipe} → ${result}"
+}
+
+# Runs `just --list` and reverse-translates recipe names back to friendly syntax.
+# Preserves ANSI colors and adjusts comment alignment after replacements.
 cmd_list() {
   local bang="${JUST_X_BANG:--x}"
   local question="${JUST_X_QUESTION:--q}"
@@ -87,45 +132,6 @@ cmd_list() {
       print line
     }
     '
-}
-
-cmd_init() {
-  local name="${1:-just}"
-  cat <<EOF
-_just_x_${name}() {
-  local cmd="\${1:-}"
-
-  # Intercept --list/-l/--summary and reverse-translate output
-  for arg in "\$@"; do
-    case "\$arg" in
-      --list|-l|--summary)
-        just-x list "\$@"
-        return
-        ;;
-    esac
-  done
-
-  if [[ -z "\$cmd" || "\$cmd" != *['!?:']* ]]; then
-    command just "\$@"
-    return
-  fi
-  shift
-  cmd="\${cmd//\!/\${JUST_X_BANG:--x}}"
-  cmd="\${cmd//\?/\${JUST_X_QUESTION:--q}}"
-  cmd="\${cmd//\:/\${JUST_X_COLON:---}}"
-  command just "\$cmd" "\$@"
-}
-alias ${name}='noglob _just_x_${name}'
-EOF
-}
-
-translate() {
-  local recipe="${1:?Usage: just-x translate <recipe>}"
-  local result="$recipe"
-  result="${result//\!/${JUST_X_BANG:--x}}"
-  result="${result//\?/${JUST_X_QUESTION:--q}}"
-  result="${result//\:/${JUST_X_COLON:---}}"
-  echo "${recipe} → ${result}"
 }
 
 case "${1:-help}" in
