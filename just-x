@@ -33,6 +33,20 @@ cmd_init() {
   cat <<EOF
 _just_x_${name}() {
   local cmd="\${1:-}"
+
+  # Intercept --list/-l/--summary and reverse-translate output
+  for arg in "\$@"; do
+    case "\$arg" in
+      --list|-l|--summary)
+        command just "\$@" | sed \\
+          -e "s/\${JUST_X_BANG:--x}/!/g" \\
+          -e "s/\${JUST_X_QUESTION:--q}/?/g" \\
+          -e "s/\${JUST_X_COLON:---}/:/g"
+        return
+        ;;
+    esac
+  done
+
   if [[ -z "\$cmd" || "\$cmd" != *['!?:']* ]]; then
     command just "\$@"
     return
