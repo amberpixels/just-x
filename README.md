@@ -1,9 +1,9 @@
-# ⚡ just-x
+# 👾 just-x
 
 [![Shell: bash | zsh](https://img.shields.io/badge/shell-bash%20%7C%20zsh-green.svg)](#requirements)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-<p align="center"><i>Use <code>!</code>, <code>?</code>, and <code>:</code> in <a href="https://github.com/casey/just">just</a> recipe names.</i></p>
+<p align="center"><i>Use <code>:</code>, <code>!</code> and <code>?</code> in <a href="https://github.com/casey/just">just</a> recipe names.</i></p>
 
 [`just`](https://github.com/casey/just) keeps recipe names clean and simple by design — no `!`, `?`, or `:` allowed ([#2587](https://github.com/casey/just/issues/2587), [#2669](https://github.com/casey/just/issues/2669)).
 `just-x` is a thin shell wrapper that adds them back via convention-based character substitution.
@@ -102,7 +102,7 @@ curl -fsSL https://raw.githubusercontent.com/amberpixels/just-x/main/uninstall.s
 
 ## 📋 Requirements
 
-- [just 😸](https://github.com/casey/just)
+- [just 🤖](https://github.com/casey/just)
 - Bash or Zsh
 
 ## 📄 License
