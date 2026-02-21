@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -eo pipefail
 
 INSTALL_DIR="${HOME}/.local/bin"
 REPO="amberpixels/just-x"
@@ -19,9 +19,7 @@ RC_FILE="$(detect_rc_file)"
 # --- Install binary ---
 mkdir -p "$INSTALL_DIR"
 
-echo "Installing just-x to ${INSTALL_DIR}/just-x..."
-
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)" || SCRIPT_DIR=""
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-}")" 2>/dev/null && pwd)" || SCRIPT_DIR=""
 
 if [[ -n "$SCRIPT_DIR" && -f "${SCRIPT_DIR}/just-x" ]]; then
   cp "${SCRIPT_DIR}/just-x" "${INSTALL_DIR}/just-x"
@@ -41,7 +39,6 @@ if [[ -n "$RC_FILE" ]] && ! echo "$PATH" | tr ':' '\n' | grep -qx "$INSTALL_DIR"
   if ! grep -qF 'export PATH="$HOME/.local/bin:$PATH"' "$RC_FILE" 2>/dev/null; then
     echo '' >> "$RC_FILE"
     echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$RC_FILE"
-    echo "Added ~/.local/bin to PATH in ${RC_FILE}"
   fi
   export PATH="${INSTALL_DIR}:${PATH}"
 fi
@@ -53,16 +50,12 @@ if [[ -n "$RC_FILE" ]]; then
   if ! grep -qF "$EVAL_LINE" "$RC_FILE" 2>/dev/null; then
     echo '' >> "$RC_FILE"
     echo "$EVAL_LINE" >> "$RC_FILE"
-    echo "Added just-x init to ${RC_FILE}"
   fi
 else
-  echo "Could not detect shell rc file. Manually add to your rc file:"
-  echo "  $EVAL_LINE"
+  printf '\033[33m⚠ Could not detect shell. Add manually:\033[0m %s\n' "$EVAL_LINE"
+  exit 0
 fi
 
 # --- Summary ---
-echo ""
-echo "Done! just-x installed successfully."
-echo ""
-echo "Restart your shell or run:"
-echo "  source ${RC_FILE:-~/.zshrc}"
+printf '\033[32m✓\033[0m just-x installed to %s\n' "$INSTALL_DIR"
+printf '  Restart your shell or run: \033[1msource %s\033[0m\n' "$RC_FILE"
