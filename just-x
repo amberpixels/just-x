@@ -28,6 +28,67 @@ Configuration (env vars):
 EOF
 }
 
+cmd_list() {
+  local bang="${JUST_X_BANG:--x}"
+  local question="${JUST_X_QUESTION:--q}"
+  local colon="${JUST_X_COLON:---}"
+
+  command just --color always "$@" | awk \
+    -v bang="$bang" \
+    -v question="$question" \
+    -v colon="$colon" \
+    '
+    function replace(str, pat, rep,    result, idx) {
+      result = ""
+      while ((idx = index(str, pat)) > 0) {
+        result = result substr(str, 1, idx - 1) rep
+        str = substr(str, idx + length(pat))
+      }
+      return result str
+    }
+    function count_of(str, pat,    n, idx) {
+      n = 0
+      while ((idx = index(str, pat)) > 0) {
+        n++
+        str = substr(str, idx + length(pat))
+      }
+      return n
+    }
+    {
+      line = $0
+
+      # Strip ANSI to find comment position and count replacements
+      clean = line
+      gsub(/\033\[[0-9;]*m/, "", clean)
+
+      extra = 0
+      if (match(clean, / +# /)) {
+        left_clean = substr(clean, 1, RSTART - 1)
+        extra += count_of(left_clean, colon) * (length(colon) - 1)
+        extra += count_of(left_clean, bang) * (length(bang) - 1)
+        extra += count_of(left_clean, question) * (length(question) - 1)
+      }
+
+      # Do replacements on the full colored line
+      line = replace(line, bang, "!")
+      line = replace(line, question, "?")
+      line = replace(line, colon, ":")
+
+      # Add compensating spaces before the comment marker
+      if (extra > 0) {
+        pad = ""
+        for (i = 0; i < extra; i++) pad = pad " "
+        # Insert before ANSI-coded # or plain #
+        if (!sub(/\033\[[0-9;]*m#/, pad "&", line)) {
+          sub(/#/, pad "#", line)
+        }
+      }
+
+      print line
+    }
+    '
+}
+
 cmd_init() {
   local name="${1:-just}"
   cat <<EOF
@@ -38,10 +99,7 @@ _just_x_${name}() {
   for arg in "\$@"; do
     case "\$arg" in
       --list|-l|--summary)
-        command just "\$@" | sed \\
-          -e "s/\${JUST_X_BANG:--x}/!/g" \\
-          -e "s/\${JUST_X_QUESTION:--q}/?/g" \\
-          -e "s/\${JUST_X_COLON:---}/:/g"
+        just-x list "\$@"
         return
         ;;
     esac
@@ -72,6 +130,7 @@ translate() {
 
 case "${1:-help}" in
   init)      shift; cmd_init "$@" ;;
+  list)      shift; cmd_list "$@" ;;
   translate) shift; translate "$@" ;;
   version)   echo "just-x $VERSION" ;;
   help|--help|-h) usage ;;
