@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -eo pipefail
 
 INSTALL_DIR="${HOME}/.local/bin"
 
@@ -17,9 +17,9 @@ RC_FILE="$(detect_rc_file)"
 # --- Remove binary ---
 if [[ -f "${INSTALL_DIR}/just-x" ]]; then
   rm "${INSTALL_DIR}/just-x"
-  echo "Removed ${INSTALL_DIR}/just-x"
 else
-  echo "just-x not found in ${INSTALL_DIR}, skipping."
+  printf '\033[33m⚠ just-x not found in %s\033[0m\n' "$INSTALL_DIR"
+  exit 0
 fi
 
 # --- Remove eval line from rc file ---
@@ -29,16 +29,12 @@ if [[ -n "$RC_FILE" && -f "$RC_FILE" ]]; then
   if grep -qF "$EVAL_LINE" "$RC_FILE" 2>/dev/null; then
     grep -vF "$EVAL_LINE" "$RC_FILE" > "${RC_FILE}.tmp"
     mv "${RC_FILE}.tmp" "$RC_FILE"
-    echo "Removed just-x init from ${RC_FILE}"
   fi
 else
-  echo "Could not detect shell rc file. Manually remove this line from your rc file:"
-  echo "  $EVAL_LINE"
+  printf '\033[33m⚠ Could not detect shell. Manually remove:\033[0m %s\n' "$EVAL_LINE"
+  exit 0
 fi
 
 # --- Summary ---
-echo ""
-echo "Done! just-x has been uninstalled."
-echo ""
-echo "Restart your shell or run:"
-echo "  source ${RC_FILE:-~/.zshrc}"
+printf '\033[32m✓\033[0m just-x uninstalled\n'
+printf '  Restart your shell or run: \033[1msource %s\033[0m\n' "$RC_FILE"
