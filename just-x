@@ -9,8 +9,6 @@ cmd_init() {
   local name="${1:-just}"
   cat <<EOF
 _just_x_${name}() {
-  local cmd="\${1:-}"
-
   # Intercept --list/-l/--summary and reverse-translate output
   for arg in "\$@"; do
     case "\$arg" in
@@ -21,15 +19,23 @@ _just_x_${name}() {
     esac
   done
 
+  # Skip leading VAR=VALUE overrides to find the recipe name
+  local -a pre=()
+  while [[ \$# -gt 0 ]] && [[ "\$1" == [A-Za-z_]*=* ]]; do
+    pre+=("\$1")
+    shift
+  done
+
+  local cmd="\${1:-}"
   if [[ -z "\$cmd" || "\$cmd" != *['!?:']* ]]; then
-    command just "\$@"
+    command just "\${pre[@]}" "\$@"
     return
   fi
   shift
   cmd="\${cmd//\!/\${JUST_X_BANG:--x}}"
   cmd="\${cmd//\?/\${JUST_X_QUESTION:--q}}"
   cmd="\${cmd//\:/\${JUST_X_COLON:---}}"
-  command just "\$cmd" "\$@"
+  command just "\${pre[@]}" "\$cmd" "\$@"
 }
 alias ${name}='noglob _just_x_${name}'
 EOF

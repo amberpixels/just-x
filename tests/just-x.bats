@@ -80,3 +80,71 @@ JUST_X="$BATS_TEST_DIRNAME/../just-x"
   type _just_x__test_j | head -1
   [[ "$(type _just_x__test_j)" == *"function"* ]]
 }
+
+# --- Integration tests (require just to be installed) ---
+
+setup_justfile() {
+  TEST_DIR="$(mktemp -d)"
+  cat > "$TEST_DIR/justfile" << 'JUSTFILE'
+my_var := "default"
+
+greet-x target arg1="def":
+    @echo "var={{my_var}} target={{target}} arg1={{arg1}}"
+
+plain target:
+    @echo "target={{target}}"
+JUSTFILE
+  eval "$("$JUST_X" init _tj)"
+}
+
+teardown_justfile() {
+  rm -rf "$TEST_DIR"
+}
+
+@test "integration: recipe with positional param" {
+  setup_justfile
+  run bash -c "cd '$TEST_DIR' && source <('$JUST_X' init _tj) && _just_x__tj 'greet!' mytarget"
+  teardown_justfile
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"var=default target=mytarget arg1=def"* ]]
+}
+
+@test "integration: recipe with all params" {
+  setup_justfile
+  run bash -c "cd '$TEST_DIR' && source <('$JUST_X' init _tj) && _just_x__tj 'greet!' mytarget custom_val"
+  teardown_justfile
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"var=default target=mytarget arg1=custom_val"* ]]
+}
+
+@test "integration: variable override + recipe with params" {
+  setup_justfile
+  run bash -c "cd '$TEST_DIR' && source <('$JUST_X' init _tj) && _just_x__tj my_var=hello 'greet!' mytarget"
+  teardown_justfile
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"var=hello target=mytarget arg1=def"* ]]
+}
+
+@test "integration: variable override + recipe + all params" {
+  setup_justfile
+  run bash -c "cd '$TEST_DIR' && source <('$JUST_X' init _tj) && _just_x__tj my_var=hello 'greet!' mytarget custom_val"
+  teardown_justfile
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"var=hello target=mytarget arg1=custom_val"* ]]
+}
+
+@test "integration: variable override + plain recipe + params" {
+  setup_justfile
+  run bash -c "cd '$TEST_DIR' && source <('$JUST_X' init _tj) && _just_x__tj my_var=hello plain mytarget"
+  teardown_justfile
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"target=mytarget"* ]]
+}
+
+@test "integration: recipe param that looks like VAR=VALUE is not consumed" {
+  setup_justfile
+  run bash -c "cd '$TEST_DIR' && source <('$JUST_X' init _tj) && _just_x__tj plain 'foo=bar'"
+  teardown_justfile
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"target=foo=bar"* ]]
+}
