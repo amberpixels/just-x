@@ -1,86 +1,107 @@
-# 👾 just-x
+# 👾 justx
 
-[![Shell: bash | zsh](https://img.shields.io/badge/shell-bash%20%7C%20zsh-green.svg)](#requirements)
+[![Go](https://img.shields.io/badge/go-1.26-00ADD8.svg)](#requirements)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-<p align="center"><i>Use <code>:</code>, <code>!</code> and <code>?</code> in <a href="https://github.com/casey/just">just</a> recipe names.</i></p>
+<p align="center"><i>The <a href="https://github.com/casey/just">justfile</a> companion — expressive recipe names · scaffold · upgrade.</i></p>
 
-[`just`](https://github.com/casey/just) keeps recipe names clean and simple by design — no `!`, `?`, or `:` allowed ([#2669](https://github.com/casey/just/issues/2669), [#2587](https://github.com/casey/just/issues/2587)).<br>
-Introducing `just-x`: a thin shell wrapper that adds them back via convention-based character substitution.
+`justx` is a small Go binary that wraps [`just`](https://github.com/casey/just). It does two things:
+
+1. **Expressive recipe names** — type `:`, `!`, and `?` in recipe names, which `just` doesn't allow ([#2669](https://github.com/casey/just/issues/2669), [#2587](https://github.com/casey/just/issues/2587)). justx translates them to plain names before calling real `just`.
+2. **Scaffolding** — `j @init` detects your stack and writes a justfile from composable modules (`fmt`, `lint`, `test`, `build`, `ci`).
 
 ```bash
-just lint:frontend   # runs → just lint--frontend
-just lint:go         # runs → just lint--go
-just build!          # runs → just build-x
-just ready?          # runs → just ready-q
-just test            # unchanged
+j app:test           # runs → just app--test
+j build!             # runs → just build-x
+j ready?             # runs → just ready-q
+j test               # unchanged
+j @init              # detect project + scaffold a justfile
 ```
 
 ## 🚀 Install
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/amberpixels/just-x/main/install.sh | bash
-```
-
-Restart your shell. Done — `just` now supports extended recipe names.
-
-<details>
-<summary>Other install methods</summary>
-
-**From source:**
+Requires [Go](https://go.dev/dl/). The installer builds the binary with `go install` and adds the `j` / `just` aliases to your shell.
 
 ```bash
 git clone https://github.com/amberpixels/just-x.git
 cd just-x && ./install.sh
 ```
 
-**Manual:**
+<details>
+<summary>Manual install</summary>
 
 ```bash
-cp just-x ~/.local/bin/
-echo 'eval "$(just-x init)"' >> ~/.zshrc
+go install github.com/amberpixels/just-x/cmd/justx@latest
+
+# then add to ~/.zshrc (zsh) — noglob lets you type `?` unquoted:
+alias j='noglob justx'
+alias just='noglob justx'
+
+# or ~/.bashrc (bash):
+alias j='justx'
+alias just='justx'
 ```
 
 </details>
 
-## 🔀 How it works
+Restart your shell (or `source` your rc file), then try `j @init`.
+
+## 🔀 Expressive recipe names
 
 | You type | Runs | Mapping |
 |---|---|---|
-| `just app:build` | `just app--build` | `:` → `--` |
-| `just dev!` | `just dev-x` | `!` → `-x` |
-| `just ready?` | `just ready-q` | `?` → `-q` |
+| `j app:build` | `just app--build` | `:` → `--` |
+| `j dev!` | `just dev-x` | `!` → `-x` |
+| `j ready?` | `just ready-q` | `?` → `-q` |
 
-Name your justfile recipes using the mapped form, type the expressive form in the terminal:
+Name your recipes in the mapped form; type the expressive form in the terminal:
 
 ```justfile
-# justfile
-
-lint--go:           # ← call with: just lint:go
+lint--go:           # ← call with: j lint:go
     golangci-lint run
 
-lint--frontend:     # ← call with: just lint:frontend
-    eslint src/
+build-x:            # ← call with: j build!  (force rebuild, no cache)
+    go build -a ./...
 
-build:              # regular build
-    cargo build
-
-build-x:            # ← call with: just build!  (force rebuild, skip cache)
-    cargo build --release --force
-
-deploy:             # deploy with confirmation prompt
-    ./deploy.sh --confirm
-
-deploy-x:           # ← call with: just deploy!  (skip confirmation, YOLO)
-    ./deploy.sh --yes
-
-ready-q:            # ← call with: just ready?  (check if ready to deploy)
-    ./check-deps.sh && ./check-env.sh
+ready-q:            # ← call with: j ready?  (check if ready)
+    ./check.sh
 ```
+
+`j --list` (and `-l` / `--summary`) reverse-translates the output back to the expressive form, keeping comment alignment intact.
+
+> **Why the alias?** A binary can't intercept the bare word `just`, and zsh expands `?` as a glob before any binary runs. The `noglob` alias solves both. `:` and `!` need no special handling; in bash, only `?` must be quoted (`j 'ready?'`).
+
+## 🪄 Scaffolding — `j @init`
+
+`j @init` detects your project (Go via `go.mod`, Node via `package.json`), shows a checkbox form of modules pre-ticked from detection, and writes a justfile. Use `--yes` to skip the form and accept the pre-ticked set.
+
+Each module is written inside provenance fences so a future `j @upgrade` can re-sync it without touching your edits:
+
+```justfile
+# >>> justx:lint (managed) — `j @upgrade` re-syncs; remove these fences to take over
+# lint Go code
+lint:
+    golangci-lint run
+# <<< justx:lint
+```
+
+`@init` refuses to overwrite an existing justfile (merging is `@upgrade`, coming in a later release).
+
+## 🧰 Meta-commands
+
+Meta-commands live under the `@` sigil and are handled by justx, never passed to `just`:
+
+```
+j @init [--yes]   detect project + scaffold a justfile
+j @help           show help
+j @version        print version
+```
+
+Planned: `@add`, `@upgrade`, `@doctor`, `@templates`.
 
 ## ⚙️ Configuration
 
-Override mappings via environment variables (set before the `eval` line in your rc file):
+Override the character mappings via environment variables (set before the aliases in your rc file):
 
 ```bash
 export JUST_X_BANG="-x"       # ! replacement (default: -x)
@@ -88,22 +109,17 @@ export JUST_X_QUESTION="-q"   # ? replacement (default: -q)
 export JUST_X_COLON="--"      # : replacement (default: --)
 ```
 
-By default, `just-x init` creates a function named `just`. Use a custom name:
-
-```bash
-eval "$(just-x init j)"    # use j instead
-```
-
 ## 🗑️ Uninstall
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/amberpixels/just-x/main/uninstall.sh | bash
+./uninstall.sh
 ```
 
 ## 📋 Requirements
 
-- [just 🤖](https://github.com/casey/just)
-- Bash or Zsh
+- [Go 1.26+](https://go.dev/dl/)
+- [just](https://github.com/casey/just)
+- zsh or bash
 
 ## 📄 License
 

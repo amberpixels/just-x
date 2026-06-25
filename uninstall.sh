@@ -1,40 +1,39 @@
 #!/usr/bin/env bash
 set -eo pipefail
 
-INSTALL_DIR="${HOME}/.local/bin"
+# justx uninstaller — removes the alias block from your rc file and deletes the
+# installed binary.
 
-# --- Detect shell and rc file ---
-detect_rc_file() {
-  case "${SHELL:-}" in
-    */zsh)  echo "${HOME}/.zshrc" ;;
-    */bash) echo "${HOME}/.bashrc" ;;
-    *)      echo "" ;;
-  esac
-}
+GREEN='\033[32m'; YELLOW='\033[33m'; BOLD='\033[1m'; NC='\033[0m'
 
-RC_FILE="$(detect_rc_file)"
+# --- Detect rc file ---
+SHELL_NAME="$(basename "${SHELL:-}")"
+case "$SHELL_NAME" in
+  zsh)  RC_FILE="${HOME}/.zshrc" ;;
+  bash) RC_FILE="${HOME}/.bashrc" ;;
+  *)    RC_FILE="" ;;
+esac
 
-# --- Remove binary ---
-if [[ -f "${INSTALL_DIR}/just-x" ]]; then
-  rm "${INSTALL_DIR}/just-x"
+# --- Remove the alias block ---
+if [[ -n "$RC_FILE" && -f "$RC_FILE" ]] && grep -qF '# >>> justx >>>' "$RC_FILE" 2>/dev/null; then
+  awk '
+    /# >>> justx >>>/ { skip = 1 }
+    !skip            { print }
+    /# <<< justx <<</ { skip = 0 }
+  ' "$RC_FILE" > "${RC_FILE}.tmp" && mv "${RC_FILE}.tmp" "$RC_FILE"
+  printf "${GREEN}✓${NC} removed justx aliases from %s\n" "$RC_FILE"
 else
-  printf '\033[33m⚠ just-x not found in %s\033[0m\n' "$INSTALL_DIR"
-  exit 0
+  printf "${YELLOW}⚠ no justx alias block found in your rc file${NC}\n"
 fi
 
-# --- Remove eval line from rc file ---
-EVAL_LINE='eval "$(just-x init)"'
-
-if [[ -n "$RC_FILE" && -f "$RC_FILE" ]]; then
-  if grep -qF "$EVAL_LINE" "$RC_FILE" 2>/dev/null; then
-    grep -vF "$EVAL_LINE" "$RC_FILE" > "${RC_FILE}.tmp"
-    mv "${RC_FILE}.tmp" "$RC_FILE"
+# --- Remove the binary ---
+if command -v go >/dev/null 2>&1; then
+  GOBIN="$(go env GOBIN)"
+  [[ -z "$GOBIN" ]] && GOBIN="$(go env GOPATH)/bin"
+  if [[ -x "${GOBIN}/justx" ]]; then
+    rm -f "${GOBIN}/justx"
+    printf "${GREEN}✓${NC} removed %s/justx\n" "$GOBIN"
   fi
-else
-  printf '\033[33m⚠ Could not detect shell. Manually remove:\033[0m %s\n' "$EVAL_LINE"
-  exit 0
 fi
 
-# --- Summary ---
-printf '\033[32m✓\033[0m just-x uninstalled\n'
-printf '  Restart your shell or run: \033[1msource %s\033[0m\n' "$RC_FILE"
+printf "  Restart your shell to finish. ${BOLD}Done.${NC}\n"

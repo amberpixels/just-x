@@ -1,61 +1,82 @@
 #!/usr/bin/env bash
 set -eo pipefail
 
-INSTALL_DIR="${HOME}/.local/bin"
-REPO="amberpixels/just-x"
-BRANCH="main"
+# justx installer — builds the binary with `go install` and wires the shell
+# aliases (`j` and `just`) needed to shadow real `just` and to dodge zsh's `?`
+# globbing via `noglob`.
 
-# --- Detect shell and rc file ---
-detect_rc_file() {
-  case "${SHELL:-}" in
-    */zsh)  echo "${HOME}/.zshrc" ;;
-    */bash) echo "${HOME}/.bashrc" ;;
-    *)      echo "" ;;
-  esac
-}
+REPO="github.com/amberpixels/just-x"
+CMD_PKG="${REPO}/cmd/justx"
 
-RC_FILE="$(detect_rc_file)"
+GREEN='\033[32m'; YELLOW='\033[33m'; RED='\033[31m'; BOLD='\033[1m'; NC='\033[0m'
 
-# --- Install binary ---
-mkdir -p "$INSTALL_DIR"
-
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-}")" 2>/dev/null && pwd)" || SCRIPT_DIR=""
-
-if [[ -n "$SCRIPT_DIR" && -f "${SCRIPT_DIR}/just-x" ]]; then
-  cp "${SCRIPT_DIR}/just-x" "${INSTALL_DIR}/just-x"
-elif command -v curl &>/dev/null; then
-  curl -fsSL "https://raw.githubusercontent.com/${REPO}/${BRANCH}/just-x" -o "${INSTALL_DIR}/just-x"
-elif command -v wget &>/dev/null; then
-  wget -qO "${INSTALL_DIR}/just-x" "https://raw.githubusercontent.com/${REPO}/${BRANCH}/just-x"
-else
-  echo "Error: curl or wget required" >&2
+# --- Require Go ---
+if ! command -v go >/dev/null 2>&1; then
+  printf "${RED}✗ Go is required${NC} — install it from https://go.dev/dl/ and retry.\n" >&2
   exit 1
 fi
 
-chmod +x "${INSTALL_DIR}/just-x"
+# --- Detect shell + rc file ---
+SHELL_NAME="$(basename "${SHELL:-}")"
+case "$SHELL_NAME" in
+  zsh)  RC_FILE="${HOME}/.zshrc" ;;
+  bash) RC_FILE="${HOME}/.bashrc" ;;
+  *)    RC_FILE="" ;;
+esac
 
-# --- Ensure ~/.local/bin is in PATH ---
-if [[ -n "$RC_FILE" ]] && ! echo "$PATH" | tr ':' '\n' | grep -qx "$INSTALL_DIR"; then
-  if ! grep -qF 'export PATH="$HOME/.local/bin:$PATH"' "$RC_FILE" 2>/dev/null; then
-    echo '' >> "$RC_FILE"
-    echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$RC_FILE"
-  fi
-  export PATH="${INSTALL_DIR}:${PATH}"
+# --- Install the binary ---
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)" || SCRIPT_DIR=""
+if [[ -n "$SCRIPT_DIR" && -d "${SCRIPT_DIR}/cmd/justx" ]]; then
+  printf "Installing justx from source (%s)…\n" "$SCRIPT_DIR"
+  (cd "$SCRIPT_DIR" && go install ./cmd/justx)
+else
+  printf "Installing justx via go install (%s@latest)…\n" "$CMD_PKG"
+  go install "${CMD_PKG}@latest"
 fi
 
-# --- Add eval line to rc file ---
-EVAL_LINE='eval "$(just-x init)"'
+# --- Locate the Go bin dir ---
+GOBIN="$(go env GOBIN)"
+[[ -z "$GOBIN" ]] && GOBIN="$(go env GOPATH)/bin"
 
-if [[ -n "$RC_FILE" ]]; then
-  if ! grep -qF "$EVAL_LINE" "$RC_FILE" 2>/dev/null; then
-    echo '' >> "$RC_FILE"
-    echo "$EVAL_LINE" >> "$RC_FILE"
-  fi
-else
-  printf '\033[33m⚠ Could not detect shell. Add manually:\033[0m %s\n' "$EVAL_LINE"
+if [[ ! -x "${GOBIN}/justx" ]]; then
+  printf "${RED}✗ justx was not found in %s after install${NC}\n" "$GOBIN" >&2
+  exit 1
+fi
+
+# --- Build the alias block (noglob only makes sense in zsh) ---
+PREFIX=""
+[[ "$SHELL_NAME" == "zsh" ]] && PREFIX="noglob "
+
+read -r -d '' ALIAS_BLOCK <<EOF || true
+# >>> justx >>>
+alias j='${PREFIX}justx'
+alias just='${PREFIX}justx'
+# <<< justx <<<
+EOF
+
+if [[ -z "$RC_FILE" ]]; then
+  printf "${YELLOW}⚠ Could not detect your shell.${NC} Add these aliases manually:\n%s\n" "$ALIAS_BLOCK"
   exit 0
 fi
 
-# --- Summary ---
-printf '\033[32m✓\033[0m just-x installed to %s\n' "$INSTALL_DIR"
-printf '  Restart your shell or run: \033[1msource %s\033[0m\n' "$RC_FILE"
+# --- Ensure the Go bin dir is on PATH ---
+if ! printf '%s' "$PATH" | tr ':' '\n' | grep -qx "$GOBIN"; then
+  if ! grep -qF "export PATH=\"${GOBIN}:\$PATH\"" "$RC_FILE" 2>/dev/null; then
+    {
+      echo ''
+      echo "export PATH=\"${GOBIN}:\$PATH\""
+    } >> "$RC_FILE"
+  fi
+fi
+
+# --- Add the alias block (idempotent) ---
+if ! grep -qF '# >>> justx >>>' "$RC_FILE" 2>/dev/null; then
+  {
+    echo ''
+    echo "$ALIAS_BLOCK"
+  } >> "$RC_FILE"
+fi
+
+printf "${GREEN}✓${NC} justx installed to %s\n" "$GOBIN"
+printf "  Restart your shell or run: ${BOLD}source %s${NC}\n" "$RC_FILE"
+printf "  Then try: ${BOLD}j @init${NC}\n"

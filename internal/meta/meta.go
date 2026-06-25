@@ -12,8 +12,8 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
-// Version is the justx version. Reset to 1.0.0 at the M5 rebrand.
-const Version = "1.0.0-dev"
+// Version is the justx version.
+const Version = "1.0.0"
 
 // Run handles an `@`-sigil meta invocation. args[0] is the meta-command
 // including its leading `@` (the sigil split happens in main). Returns a
