@@ -12,7 +12,7 @@ GREEN='\033[32m'; YELLOW='\033[33m'; RED='\033[31m'; BOLD='\033[1m'; NC='\033[0m
 
 # --- Require Go ---
 if ! command -v go >/dev/null 2>&1; then
-  printf "${RED}✗ Go is required${NC} — install it from https://go.dev/dl/ and retry.\n" >&2
+  printf '%b✗ Go is required%b — install it from https://go.dev/dl/ and retry.\n' "$RED" "$NC" >&2
   exit 1
 fi
 
@@ -39,7 +39,7 @@ GOBIN="$(go env GOBIN)"
 [[ -z "$GOBIN" ]] && GOBIN="$(go env GOPATH)/bin"
 
 if [[ ! -x "${GOBIN}/justx" ]]; then
-  printf "${RED}✗ justx was not found in %s after install${NC}\n" "$GOBIN" >&2
+  printf '%b✗ justx was not found in %s after install%b\n' "$RED" "$GOBIN" "$NC" >&2
   exit 1
 fi
 
@@ -55,7 +55,7 @@ alias just='${PREFIX}justx'
 EOF
 
 if [[ -z "$RC_FILE" ]]; then
-  printf "${YELLOW}⚠ Could not detect your shell.${NC} Add these aliases manually:\n%s\n" "$ALIAS_BLOCK"
+  printf '%b⚠ Could not detect your shell.%b Add these aliases manually:\n%s\n' "$YELLOW" "$NC" "$ALIAS_BLOCK"
   exit 0
 fi
 
@@ -77,6 +77,6 @@ if ! grep -qF '# >>> justx >>>' "$RC_FILE" 2>/dev/null; then
   } >> "$RC_FILE"
 fi
 
-printf "${GREEN}✓${NC} justx installed to %s\n" "$GOBIN"
-printf "  Restart your shell or run: ${BOLD}source %s${NC}\n" "$RC_FILE"
-printf "  Then try: ${BOLD}j @init${NC}\n"
+printf '%b✓%b justx installed to %s\n' "$GREEN" "$NC" "$GOBIN"
+printf '  Restart your shell or run: %bsource %s%b\n' "$BOLD" "$RC_FILE" "$NC"
+printf '  Then try: %bj @init%b\n' "$BOLD" "$NC"

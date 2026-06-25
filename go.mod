@@ -1,6 +1,6 @@
 module github.com/amberpixels/just-x
 
-go 1.26.4
+go 1.26
 
 require (
 	github.com/charmbracelet/huh v1.0.0

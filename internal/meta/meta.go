@@ -68,12 +68,9 @@ func newRootCommand() *cli.Command {
 				},
 			},
 		},
-		CommandNotFound: func(_ context.Context, c *cli.Command, name string) {
-			fmt.Fprintf(os.Stderr, "justx: unknown meta-command %q\n\n", name)
-			_ = cli.ShowRootCommandHelp(c)
-		},
-		// Reached when invoked with no/unknown subcommand. If there's a stray
-		// arg it's an unknown meta-command; otherwise just show help.
+		// urfave routes an unmatched `@command` here as a stray arg (this fires,
+		// not CommandNotFound, which only triggers via the help path). A stray
+		// arg is an unknown meta-command; otherwise just show help.
 		Action: func(_ context.Context, c *cli.Command) error {
 			if name := c.Args().First(); name != "" {
 				fmt.Fprintf(os.Stderr, "justx: unknown meta-command %q\n\n", name)

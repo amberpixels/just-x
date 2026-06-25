@@ -85,20 +85,15 @@ func runInit(assumeYes bool) error {
 }
 
 // runForm shows the interactive module multiselect and returns the chosen IDs.
+// Pre-ticking is driven by Option.Selected; chosen receives the result.
 func runForm(applicable []modules.Module, preselected map[string]bool) (map[string]bool, error) {
-	var chosen []string
-	for _, m := range applicable {
-		if preselected[m.ID] {
-			chosen = append(chosen, m.ID)
-		}
-	}
-
 	options := make([]huh.Option[string], len(applicable))
 	for i, m := range applicable {
 		options[i] = huh.NewOption(fmt.Sprintf("%-6s %s", m.ID, m.Title), m.ID).
 			Selected(preselected[m.ID])
 	}
 
+	var chosen []string
 	form := huh.NewForm(
 		huh.NewGroup(
 			huh.NewMultiSelect[string]().

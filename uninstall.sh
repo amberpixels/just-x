@@ -21,9 +21,9 @@ if [[ -n "$RC_FILE" && -f "$RC_FILE" ]] && grep -qF '# >>> justx >>>' "$RC_FILE"
     !skip            { print }
     /# <<< justx <<</ { skip = 0 }
   ' "$RC_FILE" > "${RC_FILE}.tmp" && mv "${RC_FILE}.tmp" "$RC_FILE"
-  printf "${GREEN}✓${NC} removed justx aliases from %s\n" "$RC_FILE"
+  printf '%b✓%b removed justx aliases from %s\n' "$GREEN" "$NC" "$RC_FILE"
 else
-  printf "${YELLOW}⚠ no justx alias block found in your rc file${NC}\n"
+  printf '%b⚠ no justx alias block found in your rc file%b\n' "$YELLOW" "$NC"
 fi
 
 # --- Remove the binary ---
@@ -32,8 +32,8 @@ if command -v go >/dev/null 2>&1; then
   [[ -z "$GOBIN" ]] && GOBIN="$(go env GOPATH)/bin"
   if [[ -x "${GOBIN}/justx" ]]; then
     rm -f "${GOBIN}/justx"
-    printf "${GREEN}✓${NC} removed %s/justx\n" "$GOBIN"
+    printf '%b✓%b removed %s/justx\n' "$GREEN" "$NC" "$GOBIN"
   fi
 fi
 
-printf "  Restart your shell to finish. ${BOLD}Done.${NC}\n"
+printf '  Restart your shell to finish. %bDone.%b\n' "$BOLD" "$NC"
