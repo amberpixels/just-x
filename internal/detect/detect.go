@@ -1,7 +1,13 @@
 // Package detect inspects a directory tree for project signals (go.mod,
-// package.json, pyproject.toml, …) and reports the stack so @init can
-// pre-tick the right modules.
+// package.json, …) and reports the stack so @init can pre-tick the right
+// modules.
 package detect
+
+import (
+	"os"
+	"os/exec"
+	"path/filepath"
+)
 
 // Stack identifies a detected project type.
 type Stack string
@@ -13,18 +19,74 @@ const (
 )
 
 // Project is the result of detection: the stack plus useful context for
-// module composition (package manager, tools already on PATH, …).
+// module composition (project root, package manager, …).
 type Project struct {
-	Root           string
+	Root           string // directory where the project signal was found
 	Stack          Stack
-	PackageManager string   // e.g. "pnpm", "yarn", "npm" for Node
-	ToolsOnPath    []string // referenced tools found on PATH
+	PackageManager string // for Node: pnpm | yarn | bun | npm
 }
 
-// Detect walks up from dir looking for project signals.
-//
-// M2 stub: returns an empty Project.
+// Detect walks up from dir looking for project signals and returns the first
+// match. If nothing is recognized it returns a Project with StackUnknown rooted
+// at dir. When multiple stacks are present in one directory, Go wins (a
+// deliberate v1 simplification; revisit if it bites).
 func Detect(dir string) (Project, error) {
-	_ = dir
-	return Project{}, nil
+	abs, err := filepath.Abs(dir)
+	if err != nil {
+		return Project{}, err
+	}
+
+	cur := abs
+	for {
+		if p, ok := inspect(cur); ok {
+			return p, nil
+		}
+		parent := filepath.Dir(cur)
+		if parent == cur {
+			break // reached filesystem root
+		}
+		cur = parent
+	}
+
+	return Project{Root: abs, Stack: StackUnknown}, nil
+}
+
+// inspect checks a single directory for a known project signal.
+func inspect(dir string) (Project, bool) {
+	if fileExists(filepath.Join(dir, "go.mod")) {
+		return Project{Root: dir, Stack: StackGo}, true
+	}
+	if fileExists(filepath.Join(dir, "package.json")) {
+		return Project{Root: dir, Stack: StackNode, PackageManager: detectNodePM(dir)}, true
+	}
+	return Project{}, false
+}
+
+// detectNodePM infers the Node package manager from the lockfile present,
+// defaulting to npm.
+func detectNodePM(dir string) string {
+	switch {
+	case fileExists(filepath.Join(dir, "pnpm-lock.yaml")):
+		return "pnpm"
+	case fileExists(filepath.Join(dir, "yarn.lock")):
+		return "yarn"
+	case fileExists(filepath.Join(dir, "bun.lockb")), fileExists(filepath.Join(dir, "bun.lock")):
+		return "bun"
+	case fileExists(filepath.Join(dir, "package-lock.json")):
+		return "npm"
+	default:
+		return "npm"
+	}
+}
+
+// OnPath reports whether an executable is available on PATH. Used by modules to
+// tell which referenced tools are already installed.
+func OnPath(name string) bool {
+	_, err := exec.LookPath(name)
+	return err == nil
+}
+
+func fileExists(path string) bool {
+	info, err := os.Stat(path)
+	return err == nil && !info.IsDir()
 }
