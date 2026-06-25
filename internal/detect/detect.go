@@ -62,20 +62,26 @@ func inspect(dir string) (Project, bool) {
 	return Project{}, false
 }
 
+// Node package managers.
+const (
+	pmPnpm = "pnpm"
+	pmYarn = "yarn"
+	pmBun  = "bun"
+	pmNpm  = "npm"
+)
+
 // detectNodePM infers the Node package manager from the lockfile present,
 // defaulting to npm.
 func detectNodePM(dir string) string {
 	switch {
 	case fileExists(filepath.Join(dir, "pnpm-lock.yaml")):
-		return "pnpm"
+		return pmPnpm
 	case fileExists(filepath.Join(dir, "yarn.lock")):
-		return "yarn"
+		return pmYarn
 	case fileExists(filepath.Join(dir, "bun.lockb")), fileExists(filepath.Join(dir, "bun.lock")):
-		return "bun"
-	case fileExists(filepath.Join(dir, "package-lock.json")):
-		return "npm"
+		return pmBun
 	default:
-		return "npm"
+		return pmNpm
 	}
 }
 

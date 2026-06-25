@@ -5,11 +5,23 @@ package router
 
 import (
 	"bytes"
+	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"strings"
 	"syscall"
+)
+
+// exitCommandNotFound is the conventional shell exit code for a missing command.
+const exitCommandNotFound = 127
+
+// Recipe-listing flags intercepted for reverse-translation.
+const (
+	flagList     = "--list"
+	flagListAbbr = "-l"
+	flagSummary  = "--summary"
 )
 
 // config holds the character→replacement mappings, overridable via env vars
@@ -53,7 +65,7 @@ func Run(args []string) int {
 func isListInvocation(args []string) bool {
 	for _, a := range args {
 		switch a {
-		case "--list", "-l", "--summary":
+		case flagList, flagListAbbr, flagSummary:
 			return true
 		}
 	}
@@ -112,11 +124,11 @@ func isVarAssignment(s string) bool {
 
 // replaceAll is strings.ReplaceAll guarded against an empty pattern (which would
 // otherwise splice the replacement between every character).
-func replaceAll(s, old, new string) string {
-	if old == "" {
+func replaceAll(s, pat, repl string) string {
+	if pat == "" {
 		return s
 	}
-	return strings.ReplaceAll(s, old, new)
+	return strings.ReplaceAll(s, pat, repl)
 }
 
 // execJust replaces the current process with real `just` so exit codes,
@@ -125,7 +137,7 @@ func execJust(args []string) int {
 	path, err := exec.LookPath("just")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "justx: `just` not found on PATH")
-		return 127
+		return exitCommandNotFound
 	}
 	argv := append([]string{"just"}, args...)
 	// On success this does not return.
@@ -140,20 +152,21 @@ func runList(args []string, cfg config) int {
 	path, err := exec.LookPath("just")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "justx: `just` not found on PATH")
-		return 127
+		return exitCommandNotFound
 	}
 
 	cmdArgs := append([]string{"--color", "always"}, args...)
-	cmd := exec.Command(path, cmdArgs...)
+	cmd := exec.CommandContext(context.Background(), path, cmdArgs...)
 	var stdout bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin
 	runErr := cmd.Run()
 
-	fmt.Print(reverseTranslateList(stdout.String(), cfg))
+	fmt.Fprint(os.Stdout, reverseTranslateList(stdout.String(), cfg))
 
-	if exitErr, ok := runErr.(*exec.ExitError); ok {
+	var exitErr *exec.ExitError
+	if errors.As(runErr, &exitErr) {
 		return exitErr.ExitCode()
 	}
 	if runErr != nil {

@@ -41,9 +41,15 @@ func newRootCommand() *cli.Command {
 			{
 				Name:  "@init",
 				Usage: "detect project + scaffold a justfile",
-				Action: func(_ context.Context, _ *cli.Command) error {
-					// M3: detect → huh form → compose → write.
-					return fmt.Errorf("@init: not implemented yet (M3)")
+				Flags: []cli.Flag{
+					&cli.BoolFlag{
+						Name:    "yes",
+						Aliases: []string{"y"},
+						Usage:   "skip the interactive form; use the pre-ticked modules",
+					},
+				},
+				Action: func(_ context.Context, c *cli.Command) error {
+					return runInit(c.Bool("yes"))
 				},
 			},
 			{
