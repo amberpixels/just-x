@@ -1,14 +1,20 @@
-# 👾 justx
+<p align="center">
+  <img src="logo.svg" alt="justx" width="440">
+</p>
 
-[![Go](https://img.shields.io/badge/go-1.26-00ADD8.svg)](#requirements)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+<div align="center">
 
-<p align="center"><i>The <a href="https://github.com/casey/just">justfile</a> companion — expressive recipe names · scaffold · upgrade.</i></p>
+[![Go Version](https://img.shields.io/github/go-mod/go-version/amberpixels/just-x)](go.mod)
+[![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
 
-`justx` is a small Go binary that wraps [`just`](https://github.com/casey/just). It does two things:
+</div>
 
-1. **Expressive recipe names** — type `:`, `!`, and `?` in recipe names, which `just` doesn't allow ([#2669](https://github.com/casey/just/issues/2669), [#2587](https://github.com/casey/just/issues/2587)). justx translates them to plain names before calling real `just`.
-2. **Scaffolding** — `j @init` detects your stack and writes a justfile from composable modules (`fmt`, `lint`, `test`, `build`, `ci`).
+---
+
+**The [`just`](https://github.com/casey/just) companion.** 👾 `justx` is a small Go binary that wraps `just` and does two things:
+
+1. **Expressive recipe names** - type `:`, `!`, and `?` in recipe names, which `just` doesn't allow ([#2669](https://github.com/casey/just/issues/2669), [#2587](https://github.com/casey/just/issues/2587)). justx translates them to plain names before calling real `just`.
+2. **Scaffolding** - `j @init` detects your stack and writes a justfile from composable modules (`fmt`, `lint`, `test`, `build`, `ci`).
 
 ```bash
 j app:test           # runs → just app--test
@@ -18,7 +24,7 @@ j test               # unchanged
 j @init              # detect project + scaffold a justfile
 ```
 
-## 🚀 Install
+## Install
 
 Requires [Go](https://go.dev/dl/). The installer builds the binary with `go install` and adds the `j` / `just` aliases to your shell.
 
@@ -27,13 +33,15 @@ git clone https://github.com/amberpixels/just-x.git
 cd just-x && ./install.sh
 ```
 
+Restart your shell (or `source` your rc file), then try `j @init`.
+
 <details>
 <summary>Manual install</summary>
 
 ```bash
 go install github.com/amberpixels/just-x/cmd/justx@latest
 
-# then add to ~/.zshrc (zsh) — noglob lets you type `?` unquoted:
+# then add to ~/.zshrc (zsh) - noglob lets you type `?` unquoted:
 alias j='noglob justx'
 alias just='noglob justx'
 
@@ -44,9 +52,7 @@ alias just='justx'
 
 </details>
 
-Restart your shell (or `source` your rc file), then try `j @init`.
-
-## 🔀 Expressive recipe names
+## Expressive Recipe Names
 
 | You type | Runs | Mapping |
 |---|---|---|
@@ -71,7 +77,7 @@ ready-q:            # ← call with: j ready?  (check if ready)
 
 > **Why the alias?** A binary can't intercept the bare word `just`, and zsh expands `?` as a glob before any binary runs. The `noglob` alias solves both. `:` and `!` need no special handling; in bash, only `?` must be quoted (`j 'ready?'`).
 
-## 🪄 Scaffolding — `j @init`
+## Scaffolding with `@init`
 
 `j @init` detects your project (Go via `go.mod`, Node via `package.json`), shows a checkbox form of modules pre-ticked from detection, and writes a justfile. Use `--yes` to skip the form and accept the pre-ticked set.
 
@@ -87,7 +93,7 @@ lint:
 
 `@init` refuses to overwrite an existing justfile (merging is `@upgrade`, coming in a later release).
 
-## 🧰 Meta-commands
+## Meta-Commands
 
 Meta-commands live under the `@` sigil and are handled by justx, never passed to `just`:
 
@@ -99,7 +105,7 @@ j @version        print version
 
 Planned: `@add`, `@upgrade`, `@doctor`, `@templates`.
 
-## ⚙️ Configuration
+## Configuration
 
 Override the character mappings via environment variables (set before the aliases in your rc file):
 
@@ -109,18 +115,22 @@ export JUST_X_QUESTION="-q"   # ? replacement (default: -q)
 export JUST_X_COLON="--"      # : replacement (default: --)
 ```
 
-## 🗑️ Uninstall
+## Uninstall
 
 ```bash
 ./uninstall.sh
 ```
 
-## 📋 Requirements
+## Requirements
 
 - [Go 1.26+](https://go.dev/dl/)
 - [just](https://github.com/casey/just)
 - zsh or bash
 
-## 📄 License
+## Feedback
 
-[MIT](LICENSE)
+justx is a solo, opinionated project - but if you stumbled upon it and have ideas, questions, or bug reports, an [issue](https://github.com/amberpixels/just-x/issues) is always welcome :)
+
+## License
+
+[MIT](LICENSE) © [amberpixels](https://amberpixels.io)

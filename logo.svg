@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 468 80" width="468" height="80" xml:space="preserve">
+  <style>
+    text { font-family: 'Menlo', 'Consolas', 'Courier New', monospace; font-size: 20px; white-space: pre; }
+  </style>
+  <rect width="468" height="80" rx="6" fill="transparent"/>
+  <!-- Row 1 -->
+  <text y="28">
+    <tspan fill="#FBBF24"> ──░█</tspan><tspan fill="#F59E0B"> ░█──░█</tspan><tspan fill="#F97316"> ░█▀▀▀█</tspan><tspan fill="#EA580C"> ▀▀█▀▀</tspan><tspan fill="#06B6D4"> ░█──░█</tspan>
+  </text>
+  <!-- Row 2 -->
+  <text y="52">
+    <tspan fill="#FBBF24"> ──░█</tspan><tspan fill="#F59E0B"> ░█──░█</tspan><tspan fill="#F97316"> ─▀▀▀▄▄</tspan><tspan fill="#EA580C"> ─░█──</tspan><tspan fill="#06B6D4"> ──▀▄▀─</tspan>
+  </text>
+  <!-- Row 3 -->
+  <text y="76">
+    <tspan fill="#FBBF24"> ░█▄█</tspan><tspan fill="#F59E0B"> ─▀▄▄▀─</tspan><tspan fill="#F97316"> ░█▄▄▄█</tspan><tspan fill="#EA580C"> ─░█──</tspan><tspan fill="#06B6D4"> ░█──░█</tspan>
+  </text>
+</svg>
