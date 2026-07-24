@@ -58,7 +58,7 @@ func runInit(assumeYes bool) error {
 		}
 	}
 
-	// Pull in modules required by the selection (e.g. ci → fmt/lint/test).
+	// Pull in modules required by the selection (e.g. ci → lint/test).
 	selected = modules.ResolveRequires(applicable, selected)
 
 	var chosen []modules.Module

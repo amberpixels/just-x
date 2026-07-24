@@ -22,7 +22,7 @@ func TestComposeGo(t *testing.T) {
 		t.Errorf("missing header:\n%s", out)
 	}
 	// Each module fenced with matching begin/end markers.
-	for _, id := range []string{"fmt", "lint", "test", "build", "ci"} {
+	for _, id := range []string{"fmt", "lint", "fix", "test", "build", "ci"} {
 		begin := "# >>> justx:" + id
 		end := "# <<< justx:" + id
 		if !strings.Contains(out, begin) {
@@ -38,6 +38,33 @@ func TestComposeGo(t *testing.T) {
 	}
 	if !strings.Contains(out, "golangci-lint run") {
 		t.Errorf("missing lint recipe:\n%s", out)
+	}
+}
+
+// A standardgo project gets `go tool standardgo` recipes instead of the
+// go fmt / golangci-lint fallbacks.
+func TestComposeGoStandardgo(t *testing.T) {
+	p := detect.Project{Stack: detect.StackGo, Standardgo: true}
+
+	out, err := Compose(p, modules.ForProject(p))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{
+		"go tool standardgo fmt ./...",
+		"go tool standardgo ./...",
+		"go tool standardgo ./... --fix",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("missing %q:\n%s", want, out)
+		}
+	}
+	// "    go fmt" is indentation-anchored: bare "go fmt" is a substring of
+	// "standardgo fmt".
+	for _, stale := range []string{"golangci-lint", "    go fmt", "[["} {
+		if strings.Contains(out, stale) {
+			t.Errorf("unexpected %q in standardgo output:\n%s", stale, out)
+		}
 	}
 }
 

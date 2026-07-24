@@ -19,8 +19,8 @@ func TestForProject(t *testing.T) {
 		stack detect.Stack
 		want  []string
 	}{
-		{detect.StackGo, []string{"fmt", "lint", "test", "build", "ci"}},
-		{detect.StackNode, []string{"fmt", "lint", "test", "build", "ci"}},
+		{detect.StackGo, []string{"fmt", "lint", "fix", "test", "build", "ci"}},
+		{detect.StackNode, []string{"fmt", "lint", "fix", "test", "build", "ci"}},
 		{detect.StackUnknown, nil},
 	}
 	for _, tt := range tests {
@@ -39,15 +39,29 @@ func TestForProject(t *testing.T) {
 
 func TestResolveRequiresPullsInDeps(t *testing.T) {
 	applicable := goModules()
-	// Select only ci; its Requires should pull in fmt, lint, test.
+	// Select only ci; its Requires should pull in lint and test.
 	got := ResolveRequires(applicable, map[string]bool{"ci": true})
-	for _, want := range []string{"ci", "fmt", "lint", "test"} {
+	for _, want := range []string{"ci", "lint", "test"} {
 		if !got[want] {
 			t.Errorf("expected %q to be resolved, got %v", want, got)
 		}
 	}
 	if got["build"] {
 		t.Errorf("build should not be pulled in by ci, got %v", got)
+	}
+}
+
+// TestCIPullsInNothingThatMutates is the point of splitting fmt, lint and fix:
+// ci verifies the tree it was handed and must never rewrite it. fmt and fix
+// both mutate, so neither may be reachable from ci.
+func TestCIPullsInNothingThatMutates(t *testing.T) {
+	for _, mods := range [][]Module{goModules(), nodeModules()} {
+		got := ResolveRequires(mods, map[string]bool{"ci": true})
+		for _, mutating := range []string{"fmt", "fix"} {
+			if got[mutating] {
+				t.Errorf("ci must not pull in %q, which rewrites code; got %v", mutating, got)
+			}
+		}
 	}
 }
 

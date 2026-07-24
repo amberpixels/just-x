@@ -20,9 +20,21 @@ type Module struct {
 }
 
 // Module IDs.
+//
+// fmt, lint and fix are three distinct verbs, and the distinction is the whole
+// reason they are separate modules:
+//
+//	lint  reads code and reports findings. Never mutates.
+//	fmt   rewrites code to canonical form. Mutates, but decides nothing:
+//	      every input has exactly one formatted output.
+//	fix   applies the mechanical subset of lint findings. Mutates, and does
+//	      make judgement calls, so it is the one to run on a clean tree.
+//
+// Only lint is safe in CI.
 const (
 	modFmt   = "fmt"
 	modLint  = "lint"
+	modFix   = "fix"
 	modTest  = "test"
 	modBuild = "build"
 	modCI    = "ci"
@@ -79,18 +91,31 @@ func always(detect.Project) bool { return true }
 func goModules() []Module {
 	return []Module{
 		{
-			ID:      modFmt,
-			Title:   "format code (go fmt)",
-			Tools:   []string{"go"},
-			Detect:  always,
-			Recipes: "# format Go code\nfmt:\n    go fmt ./...\n",
+			ID:     modFmt,
+			Title:  "format code (rewrites, decides nothing)",
+			Tools:  []string{"go"},
+			Detect: always,
+			Recipes: "# format Go code - rewrites to canonical form\nfmt:\n" +
+				"[[ if .Standardgo ]]    go tool standardgo fmt ./...\n" +
+				"[[ else ]]    go fmt ./...\n[[ end ]]",
 		},
 		{
-			ID:      modLint,
-			Title:   "lint code (golangci-lint)",
-			Tools:   []string{"golangci-lint"},
-			Detect:  func(detect.Project) bool { return detect.OnPath("golangci-lint") },
-			Recipes: "# lint Go code\nlint:\n    golangci-lint run\n",
+			ID:     modLint,
+			Title:  "lint code (reports, never mutates)",
+			Tools:  []string{"go"},
+			Detect: func(p detect.Project) bool { return p.Standardgo || detect.OnPath("golangci-lint") },
+			Recipes: "# lint Go code - reports findings, changes nothing\nlint:\n" +
+				"[[ if .Standardgo ]]    go tool standardgo ./...\n" +
+				"[[ else ]]    golangci-lint run\n[[ end ]]",
+		},
+		{
+			ID:     modFix,
+			Title:  "auto-fix findings (rewrites, makes judgement calls)",
+			Tools:  []string{"go"},
+			Detect: func(p detect.Project) bool { return p.Standardgo || detect.OnPath("golangci-lint") },
+			Recipes: "# auto-fix what can be fixed - run on a clean tree and read the diff\nfix:\n" +
+				"[[ if .Standardgo ]]    go tool standardgo ./... --fix\n" +
+				"[[ else ]]    golangci-lint run --fix\n[[ end ]]",
 		},
 		{
 			ID:      modTest,
@@ -108,10 +133,13 @@ func goModules() []Module {
 		},
 		{
 			ID:       modCI,
-			Title:    "aggregate checks (fmt + lint + test)",
+			Title:    "aggregate checks (lint + test)",
 			Detect:   always,
-			Requires: []string{modFmt, modLint, modTest},
-			Recipes:  "# run all checks\nci: fmt lint test\n",
+			Requires: []string{modLint, modTest},
+			// Deliberately no fmt: CI verifies, it does not rewrite the tree it
+			// was handed. Formatting problems still fail this recipe, because
+			// linting reports them as ordinary findings.
+			Recipes: "# run all checks - read-only, safe for CI\nci: lint test\n",
 		},
 	}
 }
@@ -122,15 +150,21 @@ func nodeModules() []Module {
 	return []Module{
 		{
 			ID:      modFmt,
-			Title:   "format code",
+			Title:   "format code (rewrites, decides nothing)",
 			Detect:  always,
-			Recipes: "# format code\nfmt:\n    [[.PackageManager]] run format\n",
+			Recipes: "# format code - rewrites to canonical form\nfmt:\n    [[.PackageManager]] run format\n",
 		},
 		{
 			ID:      modLint,
-			Title:   "lint code",
+			Title:   "lint code (reports, never mutates)",
 			Detect:  always,
-			Recipes: "# lint code\nlint:\n    [[.PackageManager]] run lint\n",
+			Recipes: "# lint code - reports findings, changes nothing\nlint:\n    [[.PackageManager]] run lint\n",
+		},
+		{
+			ID:      modFix,
+			Title:   "auto-fix findings (rewrites, makes judgement calls)",
+			Detect:  always,
+			Recipes: "# auto-fix what can be fixed\nfix:\n    [[.PackageManager]] run fix\n",
 		},
 		{
 			ID:      modTest,
@@ -146,10 +180,12 @@ func nodeModules() []Module {
 		},
 		{
 			ID:       modCI,
-			Title:    "aggregate checks (fmt + lint + test)",
+			Title:    "aggregate checks (lint + test)",
 			Detect:   always,
-			Requires: []string{modFmt, modLint, modTest},
-			Recipes:  "# run all checks\nci: fmt lint test\n",
+			Requires: []string{modLint, modTest},
+			// No fmt here either: `<pm> run format` conventionally maps to
+			// prettier --write, which rewrites the tree.
+			Recipes: "# run all checks - read-only, safe for CI\nci: lint test\n",
 		},
 	}
 }

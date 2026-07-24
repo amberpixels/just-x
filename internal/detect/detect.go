@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 )
 
 // Stack identifies a detected project type.
@@ -24,6 +25,7 @@ type Project struct {
 	Root           string // directory where the project signal was found
 	Stack          Stack
 	PackageManager string // for Node: pnpm | yarn | bun | npm
+	Standardgo     bool   // for Go: standardgo is pinned as a tool dependency
 }
 
 // Detect walks up from dir looking for project signals and returns the first
@@ -53,8 +55,8 @@ func Detect(dir string) (Project, error) {
 
 // inspect checks a single directory for a known project signal.
 func inspect(dir string) (Project, bool) {
-	if fileExists(filepath.Join(dir, "go.mod")) {
-		return Project{Root: dir, Stack: StackGo}, true
+	if goMod := filepath.Join(dir, "go.mod"); fileExists(goMod) {
+		return Project{Root: dir, Stack: StackGo, Standardgo: usesStandardgo(goMod)}, true
 	}
 	if fileExists(filepath.Join(dir, "package.json")) {
 		return Project{Root: dir, Stack: StackNode, PackageManager: detectNodePM(dir)}, true
@@ -83,6 +85,48 @@ func detectNodePM(dir string) string {
 	default:
 		return pmNpm
 	}
+}
+
+// standardgoTool is the tool directive a project gains from
+// `go get -tool github.com/amberpixels/standardgo/cmd/standardgo`.
+const standardgoTool = "github.com/amberpixels/standardgo/cmd/standardgo"
+
+// usesStandardgo reports whether go.mod pins standardgo as a tool dependency.
+//
+// The tool directive is the signal rather than a binary on PATH: standardgo is
+// deliberately not installed globally, and its whole point is that the version
+// is pinned per project.
+//
+// Handles both directive shapes go.mod uses: the single-line `tool <path>` and
+// the block `tool ( ... )` that appears once a module has several tools.
+func usesStandardgo(goModPath string) bool {
+	data, err := os.ReadFile(goModPath)
+	if err != nil {
+		return false
+	}
+
+	inBlock := false
+	for line := range strings.Lines(string(data)) {
+		line, _, _ = strings.Cut(line, "//")
+		fields := strings.Fields(line)
+		switch {
+		case inBlock:
+			if len(fields) == 1 && fields[0] == ")" {
+				inBlock = false
+			} else if len(fields) == 1 && fields[0] == standardgoTool {
+				return true
+			}
+		case len(fields) == 2 && fields[0] == "tool":
+			switch fields[1] {
+			case "(":
+				inBlock = true
+			case standardgoTool:
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 // OnPath reports whether an executable is available on PATH. Used by modules to

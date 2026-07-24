@@ -58,6 +58,52 @@ func TestDetectStack(t *testing.T) {
 	}
 }
 
+func TestDetectStandardgo(t *testing.T) {
+	tests := []struct {
+		name  string
+		goMod string
+		want  bool
+	}{
+		{"no tool directive", "module example.com/m\n\ngo 1.26\n", false},
+		{
+			"single-line tool directive",
+			"module example.com/m\n\ngo 1.26\n\ntool github.com/amberpixels/standardgo/cmd/standardgo\n",
+			true,
+		},
+		{
+			"tool block",
+			"module example.com/m\n\ngo 1.26\n\ntool (\n\tgolang.org/x/tools/cmd/stringer\n\tgithub.com/amberpixels/standardgo/cmd/standardgo\n)\n",
+			true,
+		},
+		{
+			"tool block without standardgo",
+			"module example.com/m\n\ngo 1.26\n\ntool (\n\tgolang.org/x/tools/cmd/stringer\n)\n",
+			false,
+		},
+		{
+			"directive with trailing comment",
+			"module example.com/m\n\ntool github.com/amberpixels/standardgo/cmd/standardgo // pinned\n",
+			true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := t.TempDir()
+			if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(tt.goMod), 0o644); err != nil {
+				t.Fatal(err)
+			}
+
+			p, err := Detect(dir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if p.Standardgo != tt.want {
+				t.Errorf("Standardgo = %v, want %v", p.Standardgo, tt.want)
+			}
+		})
+	}
+}
+
 func TestDetectWalksUp(t *testing.T) {
 	root := t.TempDir()
 	write(t, root, "go.mod")

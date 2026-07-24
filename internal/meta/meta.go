@@ -13,7 +13,7 @@ import (
 )
 
 // Version is the justx version.
-const Version = "1.0.0"
+const Version = "0.1.0"
 
 // Run handles an `@`-sigil meta invocation. args[0] is the meta-command
 // including its leading `@` (the sigil split happens in main). Returns a

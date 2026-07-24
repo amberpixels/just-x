@@ -14,7 +14,7 @@
 **The [`just`](https://github.com/casey/just) companion.** 👾 `justx` is a small Go binary that wraps `just` and does two things:
 
 1. **Expressive recipe names** - type `:`, `!`, and `?` in recipe names, which `just` doesn't allow ([#2669](https://github.com/casey/just/issues/2669), [#2587](https://github.com/casey/just/issues/2587)). justx translates them to plain names before calling real `just`.
-2. **Scaffolding** - `j @init` detects your stack and writes a justfile from composable modules (`fmt`, `lint`, `test`, `build`, `ci`).
+2. **Scaffolding** - `j @init` detects your stack and writes a justfile from composable modules (`fmt`, `lint`, `fix`, `test`, `build`, `ci`).
 
 ```bash
 j app:test           # runs → just app--test
@@ -81,11 +81,13 @@ ready-q:            # ← call with: j ready?  (check if ready)
 
 `j @init` detects your project (Go via `go.mod`, Node via `package.json`), shows a checkbox form of modules pre-ticked from detection, and writes a justfile. Use `--yes` to skip the form and accept the pre-ticked set.
 
+Go projects that pin [standardgo](https://github.com/amberpixels/standardgo) as a tool dependency get `go tool standardgo` recipes for `fmt` / `lint` / `fix`; everything else falls back to `go fmt` and `golangci-lint`.
+
 Each module is written inside provenance fences so a future `j @upgrade` can re-sync it without touching your edits:
 
 ```justfile
 # >>> justx:lint (managed) — `j @upgrade` re-syncs; remove these fences to take over
-# lint Go code
+# lint Go code - reports findings, changes nothing
 lint:
     golangci-lint run
 # <<< justx:lint
