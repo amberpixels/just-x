@@ -14,7 +14,7 @@ func main() {
 
 	// Meta-commands live under the `@` sigil and are never passed to `just`.
 	// If argv[1] starts with `@`, justx handles it itself.
-	if len(args) > 0 && len(args[0]) > 0 && args[0][0] == '@' {
+	if len(args) > 0 && args[0] != "" && args[0][0] == '@' {
 		os.Exit(meta.Run(args))
 	}
 

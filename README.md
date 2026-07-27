@@ -117,6 +117,22 @@ export JUST_X_QUESTION="-q"   # ? replacement (default: -q)
 export JUST_X_COLON="--"      # : replacement (default: --)
 ```
 
+## Development
+
+justx scaffolds its own justfile, so the repo is its own smoke test:
+
+```bash
+j ci               # lint + test, read-only
+j fix              # auto-fix what can be fixed
+j demo:list        # `--list` through justx: recipe names in expressive form
+j demo:init        # scaffold into a throwaway project and print the result
+j ready?           # green ci + tidy modules + clean tree
+```
+
+The blocks between the `# >>> justx:<id>` fences were written by `j @init`; everything below
+them is hand-written. Linting comes from [standardgo](https://github.com/amberpixels/standardgo),
+pinned as a `tool` dependency in `go.mod` - there is no local `.golangci.yml`.
+
 ## Uninstall
 
 ```bash

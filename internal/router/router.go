@@ -165,8 +165,7 @@ func runList(args []string, cfg config) int {
 
 	fmt.Fprint(os.Stdout, reverseTranslateList(stdout.String(), cfg))
 
-	var exitErr *exec.ExitError
-	if errors.As(runErr, &exitErr) {
+	if exitErr, ok := errors.AsType[*exec.ExitError](runErr); ok {
 		return exitErr.ExitCode()
 	}
 	if runErr != nil {
