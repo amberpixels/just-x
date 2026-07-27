@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 )
 
@@ -17,6 +18,7 @@ const (
 	StackUnknown Stack = ""
 	StackGo      Stack = "go"
 	StackNode    Stack = "node"
+	StackShell   Stack = "shell"
 )
 
 // Project is the result of detection: the stack plus useful context for
@@ -31,7 +33,8 @@ type Project struct {
 // Detect walks up from dir looking for project signals and returns the first
 // match. If nothing is recognized it returns a Project with StackUnknown rooted
 // at dir. When multiple stacks are present in one directory, Go wins (a
-// deliberate v1 simplification; revisit if it bites).
+// deliberate v1 simplification; revisit if it bites), and shell loses to
+// everything — see inspect.
 func Detect(dir string) (Project, error) {
 	abs, err := filepath.Abs(dir)
 	if err != nil {
@@ -54,6 +57,11 @@ func Detect(dir string) (Project, error) {
 }
 
 // inspect checks a single directory for a known project signal.
+//
+// Shell is checked last, and deliberately so: it is the one stack with no
+// manifest to key off, so its signal is "there are shell scripts here", which a
+// Go or Node repo shipping a couple of helper scripts also satisfies. Testing it
+// after the manifest stacks keeps those repos on their real stack.
 func inspect(dir string) (Project, bool) {
 	if goMod := filepath.Join(dir, "go.mod"); fileExists(goMod) {
 		return Project{Root: dir, Stack: StackGo, Standardgo: usesStandardgo(goMod)}, true
@@ -61,7 +69,80 @@ func inspect(dir string) (Project, bool) {
 	if fileExists(filepath.Join(dir, "package.json")) {
 		return Project{Root: dir, Stack: StackNode, PackageManager: detectNodePM(dir)}, true
 	}
+	if hasShellScripts(dir) {
+		return Project{Root: dir, Stack: StackShell}, true
+	}
 	return Project{}, false
+}
+
+// shellScriptDirs are the conventional homes for a shell project's scripts,
+// relative to the project root. The root itself is included so a repo that keeps
+// its scripts at the top level is still recognized.
+var shellScriptDirs = []string{".", "bin", "scripts"}
+
+// hasShellScripts reports whether dir holds at least one shell script, in the
+// directory itself or in a conventional script subdirectory. The search is
+// deliberately shallow: it answers "is this a shell project", not "find every
+// script" — that is `shfmt -f`'s job at recipe run time.
+func hasShellScripts(dir string) bool {
+	for _, sub := range shellScriptDirs {
+		entries, err := os.ReadDir(filepath.Join(dir, sub))
+		if err != nil {
+			continue // absent or unreadable is simply "no scripts here"
+		}
+		for _, e := range entries {
+			if !e.IsDir() && isShellFile(filepath.Join(dir, sub, e.Name())) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// isShellFile reports whether a path is a shell script, by extension or, for
+// extensionless files, by shebang. The shebang case is what catches scripts
+// meant to be run as commands, which are conventionally named `bin/deploy`
+// rather than `bin/deploy.sh`.
+func isShellFile(path string) bool {
+	switch filepath.Ext(path) {
+	case ".sh", ".bash":
+		return true
+	case "":
+		return hasShellShebang(path)
+	default:
+		return false
+	}
+}
+
+// shellShebangs are the interpreters worth linting with shellcheck.
+var shellShebangs = []string{"sh", "bash", "dash", "ksh", "zsh"}
+
+// shebangPeek is how many bytes to read looking for the shebang line. A shebang
+// is the first line or it is not a shebang, and no plausible one is this long.
+const shebangPeek = 128
+
+// hasShellShebang reports whether a file starts with a shell shebang. Every
+// field of the line is tested, not just the last, so `#!/bin/sh`,
+// `#!/usr/bin/env bash` and `#!/usr/bin/env -S bash -e` all match.
+func hasShellShebang(path string) bool {
+	f, err := os.Open(path)
+	if err != nil {
+		return false
+	}
+	defer f.Close()
+
+	buf := make([]byte, shebangPeek)
+	n, _ := f.Read(buf)
+	line, _, _ := strings.Cut(string(buf[:n]), "\n")
+	if !strings.HasPrefix(line, "#!") {
+		return false
+	}
+	for _, field := range strings.Fields(line) {
+		if slices.Contains(shellShebangs, filepath.Base(field)) {
+			return true
+		}
+	}
+	return false
 }
 
 // Node package managers.

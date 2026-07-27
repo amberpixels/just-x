@@ -79,9 +79,11 @@ ready-q:            # ← call with: j ready?  (check if ready)
 
 ## Scaffolding with `@init`
 
-`j @init` detects your project (Go via `go.mod`, Node via `package.json`), shows a checkbox form of modules pre-ticked from detection, and writes a justfile. Use `--yes` to skip the form and accept the pre-ticked set.
+`j @init` detects your project (Go via `go.mod`, Node via `package.json`, shell via scripts in `./`, `bin/` or `scripts/`), shows a checkbox form of modules pre-ticked from detection, and writes a justfile. Use `--yes` to skip the form and accept the pre-ticked set.
 
 Go projects that pin [standardgo](https://github.com/amberpixels/standardgo) as a tool dependency get `go tool standardgo` recipes for `fmt` / `lint` / `fix`; everything else falls back to `go fmt` and `golangci-lint`.
+
+Shell projects get [shellcheck](https://www.shellcheck.net) for correctness and [shfmt](https://github.com/mvdan/sh) for formatting. Scripts are discovered at run time by `shfmt -f`, which matches on extension *and* on shebang, so an extensionless `bin/deploy` is covered without being listed anywhere. Shell is detected last, so a Go or Node repo that merely ships a few helper scripts keeps its real stack. There is no `test` module: no shell test runner is conventional enough to assume.
 
 Each module is written inside provenance fences so a future `j @upgrade` can re-sync it without touching your edits:
 
