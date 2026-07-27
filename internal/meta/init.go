@@ -40,7 +40,8 @@ func runInit(assumeYes bool) error {
 	}
 	applicable := modules.ForProject(p)
 	if len(applicable) == 0 {
-		return errors.New("no recognized project here — need a go.mod or package.json")
+		return errors.New("no recognized project here — need a go.mod, a package.json, " +
+			"or shell scripts in ./, bin/ or scripts/")
 	}
 
 	// Pre-tick from detection.

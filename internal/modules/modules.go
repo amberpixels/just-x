@@ -40,6 +40,15 @@ const (
 	modCI    = "ci"
 )
 
+// Titles for the three verbs above, shown in the @init form. They are shared
+// across stacks because the promise each verb makes is the same whatever the
+// language; only the command behind it changes.
+const (
+	titleFmt  = "format code (rewrites, decides nothing)"
+	titleLint = "lint code (reports, never mutates)"
+	titleFix  = "auto-fix findings (rewrites, makes judgement calls)"
+)
+
 // ForProject returns the modules applicable to a detected project, in display
 // order. Returns nil for an unrecognized stack.
 func ForProject(p detect.Project) []Module {
@@ -48,6 +57,8 @@ func ForProject(p detect.Project) []Module {
 		return goModules()
 	case detect.StackNode:
 		return nodeModules()
+	case detect.StackShell:
+		return shellModules()
 	case detect.StackUnknown:
 		return nil
 	default:
@@ -92,7 +103,7 @@ func goModules() []Module {
 	return []Module{
 		{
 			ID:     modFmt,
-			Title:  "format code (rewrites, decides nothing)",
+			Title:  titleFmt,
 			Tools:  []string{"go"},
 			Detect: always,
 			Recipes: "# format Go code - rewrites to canonical form\nfmt:\n" +
@@ -101,7 +112,7 @@ func goModules() []Module {
 		},
 		{
 			ID:     modLint,
-			Title:  "lint code (reports, never mutates)",
+			Title:  titleLint,
 			Tools:  []string{"go"},
 			Detect: func(p detect.Project) bool { return p.Standardgo || detect.OnPath("golangci-lint") },
 			Recipes: "# lint Go code - reports findings, changes nothing\nlint:\n" +
@@ -110,7 +121,7 @@ func goModules() []Module {
 		},
 		{
 			ID:     modFix,
-			Title:  "auto-fix findings (rewrites, makes judgement calls)",
+			Title:  titleFix,
 			Tools:  []string{"go"},
 			Detect: func(p detect.Project) bool { return p.Standardgo || detect.OnPath("golangci-lint") },
 			Recipes: "# auto-fix what can be fixed - run on a clean tree and read the diff\nfix:\n" +
@@ -144,25 +155,88 @@ func goModules() []Module {
 	}
 }
 
+// Shell recipe fragments.
+//
+// discoverShell lists the scripts to check. shfmt's own -f finds shell files by
+// extension and by shebang, matching what detection looked for, so a script
+// named `bin/deploy` is covered without being listed anywhere.
+//
+// `xargs -r` keeps a tree whose scripts have all been removed from invoking
+// shellcheck with no arguments, which it treats as an error. GNU xargs runs the
+// command on empty input; BSD does not; -r makes both skip it.
+const (
+	toolShfmt      = "shfmt"
+	toolShellcheck = "shellcheck"
+
+	discoverShell = toolShfmt + " -f ."
+	// shfmtStyle is the house format: two-space indent, indented switch cases.
+	shfmtStyle = "-i 2 -ci"
+)
+
+func shellModules() []Module {
+	return []Module{
+		{
+			ID:     modFmt,
+			Title:  titleFmt,
+			Tools:  []string{toolShfmt},
+			Detect: always,
+			Recipes: "# format shell scripts - rewrites to canonical form\nfmt:\n" +
+				"    shfmt -w " + shfmtStyle + " .\n",
+		},
+		{
+			ID:     modLint,
+			Title:  titleLint,
+			Tools:  []string{toolShellcheck, toolShfmt},
+			Detect: func(detect.Project) bool { return detect.OnPath(toolShellcheck) },
+			Recipes: "# lint shell scripts - reports findings, changes nothing\nlint:\n" +
+				"    " + discoverShell + " | xargs -r shellcheck\n" +
+				"    shfmt -d " + shfmtStyle + " .\n",
+		},
+		{
+			ID:     modFix,
+			Title:  titleFix,
+			Tools:  []string{toolShellcheck, toolShfmt},
+			Detect: func(detect.Project) bool { return detect.OnPath(toolShellcheck) },
+			// Both halves make judgement calls, which is why they are here and not
+			// in fmt: shellcheck's diff format emits a patch of the findings it can
+			// mechanically fix, and shfmt -s rewrites code it considers redundant.
+			// --allow-empty is required because a clean tree yields no patch at all.
+			Recipes: "# auto-fix what can be fixed - run on a clean tree and read the diff\nfix:\n" +
+				"    " + discoverShell + " | xargs -r shellcheck -f diff | git apply --allow-empty\n" +
+				"    shfmt -w -s " + shfmtStyle + " .\n",
+		},
+		{
+			ID:       modCI,
+			Title:    "aggregate checks (lint)",
+			Detect:   always,
+			Requires: []string{modLint},
+			// No test module for shell: there is no runner conventional enough to
+			// assume, so ci aggregates lint alone rather than naming a recipe that
+			// would not exist.
+			Recipes: "# run all checks - read-only, safe for CI\nci: lint\n",
+		},
+	}
+}
+
 func nodeModules() []Module {
 	// Recipes run scripts via the detected package manager. `<pm> run <script>`
 	// works for npm, pnpm, yarn and bun alike.
 	return []Module{
 		{
 			ID:      modFmt,
-			Title:   "format code (rewrites, decides nothing)",
+			Title:   titleFmt,
 			Detect:  always,
 			Recipes: "# format code - rewrites to canonical form\nfmt:\n    [[.PackageManager]] run format\n",
 		},
 		{
 			ID:      modLint,
-			Title:   "lint code (reports, never mutates)",
+			Title:   titleLint,
 			Detect:  always,
 			Recipes: "# lint code - reports findings, changes nothing\nlint:\n    [[.PackageManager]] run lint\n",
 		},
 		{
 			ID:      modFix,
-			Title:   "auto-fix findings (rewrites, makes judgement calls)",
+			Title:   titleFix,
 			Detect:  always,
 			Recipes: "# auto-fix what can be fixed\nfix:\n    [[.PackageManager]] run fix\n",
 		},
