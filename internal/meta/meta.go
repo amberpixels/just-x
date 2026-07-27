@@ -12,8 +12,10 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
-// Version is the justx version.
-const Version = "0.1.0"
+// Version is the justx version. Stays 0.x until `@upgrade` lands: every
+// generated justfile carries a fence telling the user to run it, so the
+// provenance contract is not actually honored yet.
+const Version = "0.2.0"
 
 // Run handles an `@`-sigil meta invocation. args[0] is the meta-command
 // including its leading `@` (the sigil split happens in main). Returns a

@@ -137,7 +137,7 @@ func hasShellShebang(path string) bool {
 	if !strings.HasPrefix(line, "#!") {
 		return false
 	}
-	for _, field := range strings.Fields(line) {
+	for field := range strings.FieldsSeq(line) {
 		if slices.Contains(shellShebangs, filepath.Base(field)) {
 			return true
 		}
