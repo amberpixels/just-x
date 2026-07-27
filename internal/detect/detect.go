@@ -129,7 +129,7 @@ func hasShellShebang(path string) bool {
 	if err != nil {
 		return false
 	}
-	defer f.Close() //nolint:errcheck // read-only
+	defer f.Close()
 
 	buf := make([]byte, shebangPeek)
 	n, _ := f.Read(buf)

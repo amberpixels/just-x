@@ -21,6 +21,7 @@ func TestForProject(t *testing.T) {
 	}{
 		{detect.StackGo, []string{"fmt", "lint", "fix", "test", "build", "ci"}},
 		{detect.StackNode, []string{"fmt", "lint", "fix", "test", "build", "ci"}},
+		{detect.StackShell, []string{"fmt", "lint", "fix", "ci"}},
 		{detect.StackUnknown, nil},
 	}
 	for _, tt := range tests {
@@ -55,7 +56,7 @@ func TestResolveRequiresPullsInDeps(t *testing.T) {
 // ci verifies the tree it was handed and must never rewrite it. fmt and fix
 // both mutate, so neither may be reachable from ci.
 func TestCIPullsInNothingThatMutates(t *testing.T) {
-	for _, mods := range [][]Module{goModules(), nodeModules()} {
+	for _, mods := range [][]Module{goModules(), nodeModules(), shellModules()} {
 		got := ResolveRequires(mods, map[string]bool{"ci": true})
 		for _, mutating := range []string{"fmt", "fix"} {
 			if got[mutating] {
