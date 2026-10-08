@@ -2,10 +2,12 @@ module github.com/amberpixels/just-x
 
 go 1.26
 
+tool github.com/amberpixels/standardgo/cmd/standardgo
+
 require (
 	github.com/charmbracelet/huh v1.0.0
-	github.com/urfave/cli/v3 v3.10.0
-	golang.org/x/term v0.44.0
+	github.com/urfave/cli/v3 v3.10.1
+	golang.org/x/term v0.45.0
 )
 
 require (
@@ -239,5 +241,3 @@ require (
 	mvdan.cc/gofumpt v0.9.2 // indirect
 	mvdan.cc/unparam v0.0.0-20251027182757-5beb8c8f8f15 // indirect
 )
-
-tool github.com/amberpixels/standardgo/cmd/standardgo
