@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"slices"
 	"strings"
 	"syscall"
 )
@@ -163,7 +164,11 @@ func runList(args []string, cfg config) int {
 	cmd.Stdin = os.Stdin
 	runErr := cmd.Run()
 
-	fmt.Fprint(os.Stdout, reverseTranslateList(stdout.String(), cfg))
+	if slices.Contains(args, flagSummary) {
+		fmt.Fprint(os.Stdout, reverseTranslateSummary(stdout.String(), cfg))
+	} else {
+		fmt.Fprint(os.Stdout, reverseTranslateList(stdout.String(), cfg))
+	}
 
 	if exitErr, ok := errors.AsType[*exec.ExitError](runErr); ok {
 		return exitErr.ExitCode()
