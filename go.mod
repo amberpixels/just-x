@@ -1,13 +1,13 @@
 module github.com/amberpixels/just-x
 
-go 1.26.0
+go 1.27
 
 tool github.com/amberpixels/standardgo/cmd/standardgo
 
 require (
 	github.com/charmbracelet/huh v1.0.0
 	github.com/urfave/cli/v3 v3.14.0
-	golang.org/x/term v0.46.0
+	golang.org/x/term v0.47.0
 )
 
 require (
@@ -228,7 +228,7 @@ require (
 	golang.org/x/exp/typeparams v0.0.0-20260209203927-2842357ff358 // indirect
 	golang.org/x/mod v0.38.0 // indirect
 	golang.org/x/sync v0.22.0 // indirect
-	golang.org/x/sys v0.48.0 // indirect
+	golang.org/x/sys v0.49.0 // indirect
 	golang.org/x/text v0.40.0 // indirect
 	golang.org/x/tools v0.48.0 // indirect
 	google.golang.org/protobuf v1.36.10 // indirect
