@@ -75,6 +75,8 @@ ready-q:            # ← call with: j ready?  (check if ready)
 
 `j --list` (and `-l` / `--summary`) reverse-translates the output back to the expressive form, keeping comment alignment intact.
 
+Module paths work too: `::` is just's [module](https://just.systems/man/en/modules.html) separator, so justx passes it through and translates only the names around it. `j cli::lint:go` runs `just cli::lint--go`.
+
 > **Why the alias?** A binary can't intercept the bare word `just`, and zsh expands `?` as a glob before any binary runs. The `noglob` alias solves both. `:` and `!` need no special handling; in bash, only `?` must be quoted (`j 'ready?'`).
 
 ## Scaffolding with `@init`

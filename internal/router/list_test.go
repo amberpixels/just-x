@@ -67,6 +67,11 @@ func TestReverseLineNoColor(t *testing.T) {
 			"        sub:r  # sub recipe --x",
 		},
 		{
+			"module heading untouched",
+			"    cli:",
+			"    cli:",
+		},
+		{
 			"group heading untouched",
 			"    [my--grp]",
 			"    [my--grp]",
