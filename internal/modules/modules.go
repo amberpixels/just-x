@@ -107,7 +107,7 @@ func goModules() []Module {
 			Tools:  []string{"go"},
 			Detect: always,
 			Recipes: "# format Go code - rewrites to canonical form\nfmt:\n" +
-				"[[ if .Standardgo ]]    go tool standardgo fmt ./...\n" +
+				"[[ if .Standardgo ]]    [[ .GoTool ]] standardgo fmt ./...\n" +
 				"[[ else ]]    go fmt ./...\n[[ end ]]",
 		},
 		{
@@ -116,7 +116,7 @@ func goModules() []Module {
 			Tools:  []string{"go"},
 			Detect: func(p detect.Project) bool { return p.Standardgo || detect.OnPath("golangci-lint") },
 			Recipes: "# lint Go code - reports findings, changes nothing\nlint:\n" +
-				"[[ if .Standardgo ]]    go tool standardgo ./...\n" +
+				"[[ if .Standardgo ]]    [[ .GoTool ]] standardgo ./...\n" +
 				"[[ else ]]    golangci-lint run\n[[ end ]]",
 		},
 		{
@@ -125,7 +125,7 @@ func goModules() []Module {
 			Tools:  []string{"go"},
 			Detect: func(p detect.Project) bool { return p.Standardgo || detect.OnPath("golangci-lint") },
 			Recipes: "# auto-fix what can be fixed - run on a clean tree and read the diff\nfix:\n" +
-				"[[ if .Standardgo ]]    go tool standardgo ./... --fix\n" +
+				"[[ if .Standardgo ]]    [[ .GoTool ]] standardgo ./... --fix\n" +
 				"[[ else ]]    golangci-lint run --fix\n[[ end ]]",
 		},
 		{

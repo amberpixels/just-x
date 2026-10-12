@@ -165,6 +165,64 @@ func TestDetectStandardgo(t *testing.T) {
 	}
 }
 
+// standardgo pinned in a separate tools/go.mod is detected and its modfile
+// reported, so recipes can point `go tool` at it.
+func TestDetectStandardgoToolsModule(t *testing.T) {
+	const pinned = "module example.com/m/tools\n\ntool github.com/amberpixels/standardgo/cmd/standardgo\n"
+	tests := []struct {
+		name        string
+		rootGoMod   string
+		toolsGoMod  string // "" means no tools/go.mod
+		wantPinned  bool
+		wantModfile string
+		wantGoTool  string
+	}{
+		{"tools module", "module example.com/m\n", pinned, true, "tools/go.mod", "go tool -modfile=tools/go.mod"},
+		{
+			"tools module without standardgo",
+			"module example.com/m\n",
+			"module example.com/m/tools\n",
+			false,
+			"",
+			"go tool",
+		},
+		{"root wins over tools module", pinned, pinned, true, "", "go tool"},
+		{"no tools module", "module example.com/m\n", "", false, "", "go tool"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := t.TempDir()
+			if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(tt.rootGoMod), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			if tt.toolsGoMod != "" {
+				if err := os.Mkdir(filepath.Join(dir, "tools"), 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(
+					filepath.Join(dir, "tools", "go.mod"),
+					[]byte(tt.toolsGoMod),
+					0o644,
+				); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			p, err := Detect(dir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if p.Standardgo != tt.wantPinned || p.ToolsModfile != tt.wantModfile {
+				t.Errorf("Standardgo, ToolsModfile = %v, %q, want %v, %q",
+					p.Standardgo, p.ToolsModfile, tt.wantPinned, tt.wantModfile)
+			}
+			if got := p.GoTool(); got != tt.wantGoTool {
+				t.Errorf("GoTool() = %q, want %q", got, tt.wantGoTool)
+			}
+		})
+	}
+}
+
 func TestDetectWalksUp(t *testing.T) {
 	root := t.TempDir()
 	write(t, root, "go.mod")

@@ -68,6 +68,28 @@ func TestComposeGoStandardgo(t *testing.T) {
 	}
 }
 
+// standardgo pinned in tools/go.mod gets recipes that point `go tool` at it.
+func TestComposeGoStandardgoToolsModule(t *testing.T) {
+	p := detect.Project{Stack: detect.StackGo, Standardgo: true, ToolsModfile: "tools/go.mod"}
+
+	out, err := Compose(p, modules.ForProject(p))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{
+		"    go tool -modfile=tools/go.mod standardgo fmt ./...",
+		"    go tool -modfile=tools/go.mod standardgo ./...",
+		"    go tool -modfile=tools/go.mod standardgo ./... --fix",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("missing %q:\n%s", want, out)
+		}
+	}
+	if strings.Contains(out, "go tool standardgo") {
+		t.Errorf("unexpected root-module invocation:\n%s", out)
+	}
+}
+
 func TestComposeNodeUsesPackageManager(t *testing.T) {
 	p := detect.Project{Stack: detect.StackNode, PackageManager: "pnpm"}
 	mods := modules.ForProject(p)

@@ -28,6 +28,16 @@ type Project struct {
 	Stack          Stack
 	PackageManager string // for Node: pnpm | yarn | bun | npm
 	Standardgo     bool   // for Go: standardgo is pinned as a tool dependency
+	ToolsModfile   string // for Go: separate module pinning standardgo (toolsModfile), "" when it is the root go.mod
+}
+
+// GoTool is the command prefix that runs a pinned Go tool, pointing `go tool`
+// at the separate tools module when standardgo lives there.
+func (p Project) GoTool() string {
+	if p.ToolsModfile == "" {
+		return "go tool"
+	}
+	return "go tool -modfile=" + p.ToolsModfile
 }
 
 // Detect walks up from dir looking for project signals and returns the first
@@ -64,7 +74,11 @@ func Detect(dir string) (Project, error) {
 // after the manifest stacks keeps those repos on their real stack.
 func inspect(dir string) (Project, bool) {
 	if goMod := filepath.Join(dir, "go.mod"); fileExists(goMod) {
-		return Project{Root: dir, Stack: StackGo, Standardgo: usesStandardgo(goMod)}, true
+		p := Project{Root: dir, Stack: StackGo, Standardgo: usesStandardgo(goMod)}
+		if !p.Standardgo && usesStandardgo(filepath.Join(dir, toolsModfile)) {
+			p.Standardgo, p.ToolsModfile = true, toolsModfile
+		}
+		return p, true
 	}
 	if fileExists(filepath.Join(dir, "package.json")) {
 		return Project{Root: dir, Stack: StackNode, PackageManager: detectNodePM(dir)}, true
@@ -167,6 +181,11 @@ func detectNodePM(dir string) string {
 		return pmNpm
 	}
 }
+
+// toolsModfile is the conventional separate module for dev tools, relative to
+// the project root. Pinning standardgo there keeps its large dependency tree out
+// of the main go.mod; recipes reach it with `go tool -modfile=tools/go.mod`.
+const toolsModfile = "tools/go.mod"
 
 // standardgoTool is the tool directive a project gains from
 // `go get -tool github.com/amberpixels/standardgo/cmd/standardgo`.
