@@ -56,9 +56,9 @@ alias just='justx'
 
 | You type | Runs | Mapping |
 |---|---|---|
-| `j app:build` | `just app--build` | `:` → `--` |
-| `j dev!` | `just dev-x` | `!` → `-x` |
-| `j ready?` | `just ready-q` | `?` → `-q` |
+| `j app:build` | `just app--build` | `:` to `--` |
+| `j dev!` | `just dev-x` | `!` to `-x` |
+| `j ready?` | `just ready-q` | `?` to `-q` |
 
 Name your recipes in the mapped form; type the expressive form in the terminal:
 
@@ -73,24 +73,24 @@ ready-q:            # ← call with: j ready?  (check if ready)
     ./check.sh
 ```
 
-`j --list` (and `-l` / `--summary`) reverse-translates the output back to the expressive form, keeping comment alignment intact.
+`j --list` (and `-l` / `--summary`) prints recipe names back in the expressive form, with comments still aligned.
 
-Module paths work too: `::` is just's [module](https://just.systems/man/en/modules.html) separator, so justx passes it through and translates only the names around it. `j cli::lint:go` runs `just cli::lint--go`.
+Module paths work too: justx passes just's [module](https://just.systems/man/en/modules.html) separator `::` through and translates only the names around it. `j cli::lint:go` runs `just cli::lint--go`.
 
 > **Why the alias?** A binary can't intercept the bare word `just`, and zsh expands `?` as a glob before any binary runs. The `noglob` alias solves both. `:` and `!` need no special handling; in bash, only `?` must be quoted (`j 'ready?'`).
 
 ## Scaffolding with `@init`
 
-`j @init` detects your project (Go via `go.mod`, Node via `package.json`, shell via scripts in `./`, `bin/` or `scripts/`), shows a checkbox form of modules pre-ticked from detection, and writes a justfile. Use `--yes` to skip the form and accept the pre-ticked set.
+`j @init` detects your project: Go via `go.mod`, Node via `package.json`, shell via scripts in `./`, `bin/` or `scripts/`. It shows a checkbox form of modules, pre-ticked from detection, and writes a justfile. `--yes` skips the form and takes the pre-ticked set.
 
-Go projects that pin [standardgo](https://github.com/amberpixels/standardgo) as a tool dependency get `go tool standardgo` recipes for `fmt` / `lint` / `fix`, or `go tool -modfile=tools/go.mod standardgo` when it is pinned in a separate `tools/go.mod` module; everything else falls back to `go fmt` and `golangci-lint`.
+Go projects that pin [standardgo](https://github.com/amberpixels/standardgo) as a tool dependency get `go tool standardgo` recipes for `fmt` / `lint` / `fix`. If it is pinned in a separate `tools/go.mod` module, the recipes run `go tool -modfile=tools/go.mod standardgo`. Other Go projects fall back to `go fmt` and `golangci-lint`.
 
-Shell projects get [shellcheck](https://www.shellcheck.net) for correctness and [shfmt](https://github.com/mvdan/sh) for formatting. Scripts are discovered at run time by `shfmt -f`, which matches on extension *and* on shebang, so an extensionless `bin/deploy` is covered without being listed anywhere. Shell is detected last, so a Go or Node repo that merely ships a few helper scripts keeps its real stack. There is no `test` module: no shell test runner is conventional enough to assume.
+Shell projects get [shellcheck](https://www.shellcheck.net) for linting and [shfmt](https://github.com/mvdan/sh) for formatting. `shfmt -f` finds scripts at run time by extension *and* shebang, so an extensionless `bin/deploy` is covered without being listed. Shell is detected last, so a Go or Node repo with a few helper scripts keeps its real stack. There is no `test` module: no shell test runner is conventional enough to assume.
 
 Each module is written inside provenance fences so a future `j @upgrade` can re-sync it without touching your edits:
 
 ```justfile
-# >>> justx:lint (managed) — `j @upgrade` re-syncs; remove these fences to take over
+# >>> justx:lint (managed) - `j @upgrade` re-syncs; remove these fences to take over
 # lint Go code - reports findings, changes nothing
 lint:
     golangci-lint run
@@ -135,7 +135,7 @@ j ready?           # green ci + tidy modules + clean tree
 
 The blocks between the `# >>> justx:<id>` fences were written by `j @init`; everything below
 them is hand-written. Linting comes from [standardgo](https://github.com/amberpixels/standardgo),
-pinned as a `tool` dependency in `tools/go.mod`, a separate module so its dependencies stay out
+pinned as a `tool` dependency in `tools/go.mod`. That separate module keeps its dependencies out
 of the main `go.mod`. There is no local `.golangci.yml`.
 
 ## Uninstall
@@ -146,7 +146,7 @@ of the main `go.mod`. There is no local `.golangci.yml`.
 
 ## Requirements
 
-- [Go 1.26+](https://go.dev/dl/)
+- [Go 1.27+](https://go.dev/dl/)
 - [just](https://github.com/casey/just)
 - zsh or bash
 
