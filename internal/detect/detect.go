@@ -42,9 +42,8 @@ func (p Project) GoTool() string {
 
 // Detect walks up from dir looking for project signals and returns the first
 // match. If nothing is recognized it returns a Project with StackUnknown rooted
-// at dir. When multiple stacks are present in one directory, Go wins (a
-// deliberate v1 simplification; revisit if it bites), and shell loses to
-// everything — see inspect.
+// at dir. When one directory holds several stacks, Go wins over Node and shell
+// loses to both (see inspect).
 func Detect(dir string) (Project, error) {
 	abs, err := filepath.Abs(dir)
 	if err != nil {
@@ -68,10 +67,10 @@ func Detect(dir string) (Project, error) {
 
 // inspect checks a single directory for a known project signal.
 //
-// Shell is checked last, and deliberately so: it is the one stack with no
-// manifest to key off, so its signal is "there are shell scripts here", which a
-// Go or Node repo shipping a couple of helper scripts also satisfies. Testing it
-// after the manifest stacks keeps those repos on their real stack.
+// Shell is checked last: it is the one stack with no manifest to key off, so its
+// signal is "there are shell scripts here", which a Go or Node repo shipping a
+// couple of helper scripts also satisfies. Testing it after the manifest stacks
+// keeps those repos on their real stack.
 func inspect(dir string) (Project, bool) {
 	if goMod := filepath.Join(dir, "go.mod"); fileExists(goMod) {
 		p := Project{Root: dir, Stack: StackGo, Standardgo: usesStandardgo(goMod)}
@@ -96,8 +95,8 @@ var shellScriptDirs = []string{".", "bin", "scripts"}
 
 // hasShellScripts reports whether dir holds at least one shell script, in the
 // directory itself or in a conventional script subdirectory. The search is
-// deliberately shallow: it answers "is this a shell project", not "find every
-// script" — that is `shfmt -f`'s job at recipe run time.
+// shallow: it answers "is this a shell project", not "find every script",
+// which `shfmt -f` does at recipe run time.
 func hasShellScripts(dir string) bool {
 	for _, sub := range shellScriptDirs {
 		entries, err := os.ReadDir(filepath.Join(dir, sub))

@@ -1,6 +1,6 @@
 // Package router translates expressive recipe names (`:`, `!`, `?`) into the
-// mappings real `just` understands, then execs `just`. It is the thin,
-// must-never-break core ported 1:1 from the original bash wrapper.
+// mappings real `just` understands, then execs `just`. Every invocation goes
+// through it, so its behavior stays 1:1 with the original bash wrapper.
 package router
 
 import (
@@ -25,8 +25,8 @@ const (
 	flagSummary  = "--summary"
 )
 
-// config holds the character→replacement mappings, overridable via env vars
-// (kept compatible with the original bash tool).
+// config holds the character-to-replacement mappings, overridable via the same
+// env vars the original bash tool read.
 type config struct {
 	bang     string // ! replacement   (default: -x)
 	question string // ? replacement   (default: -q)
@@ -153,7 +153,7 @@ func execJust(args []string) int {
 }
 
 // runList runs `just --color always <args>` and reverse-translates the recipe
-// names in the output (mapped → expressive), re-padding comment alignment.
+// names in the output (mapped to expressive), re-padding comment alignment.
 func runList(args []string, cfg config) int {
 	path, err := exec.LookPath("just")
 	if err != nil {

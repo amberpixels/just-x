@@ -9,7 +9,7 @@ func TestReverseLineNoColor(t *testing.T) {
 		want string
 	}{
 		{
-			// colon: app--build → app:build; one char shorter, so +1 space before #.
+			// app--build becomes app:build, one char shorter, so +1 space before #.
 			"colon recipe realigns comment",
 			"    app--build target    # builds the app",
 			"    app:build target     # builds the app",
@@ -35,7 +35,7 @@ func TestReverseLineNoColor(t *testing.T) {
 			"    build    # regular build",
 		},
 		{
-			// two colons → two chars shorter → +2 spaces.
+			// two colons make it two chars shorter, so +2 spaces.
 			"multiple replacements accumulate padding",
 			"    a--b--c    # x",
 			"    a:b:c      # x",

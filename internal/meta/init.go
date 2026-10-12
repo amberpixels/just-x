@@ -15,13 +15,13 @@ import (
 	"github.com/amberpixels/just-x/internal/scaffold"
 )
 
-// justfilePerm is the mode for a generated justfile — a normal, world-readable
-// project file meant to be committed.
+// justfilePerm is world-readable: a generated justfile is a normal project file
+// meant to be committed.
 const justfilePerm = 0o644
 
 // runInit implements `@init`: detect the project, pick modules (interactively
 // unless assumeYes or non-TTY), compose a fenced justfile, and write it.
-// Refuses to overwrite an existing justfile (v1 has no merge — that's @upgrade).
+// Refuses to overwrite an existing justfile; merging into one is @upgrade's job.
 func runInit(assumeYes bool) error {
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -30,7 +30,7 @@ func runInit(assumeYes bool) error {
 
 	justfilePath := filepath.Join(cwd, "justfile")
 	if exists(justfilePath) {
-		return errors.New("justfile already exists — refusing to overwrite " +
+		return errors.New("justfile already exists - refusing to overwrite " +
 			"(merging into existing files is `@upgrade`, landing in v2)")
 	}
 
@@ -40,7 +40,7 @@ func runInit(assumeYes bool) error {
 	}
 	applicable := modules.ForProject(p)
 	if len(applicable) == 0 {
-		return errors.New("no recognized project here — need a go.mod, a package.json, " +
+		return errors.New("no recognized project here - need a go.mod, a package.json, " +
 			"or shell scripts in ./, bin/ or scripts/")
 	}
 
@@ -59,7 +59,7 @@ func runInit(assumeYes bool) error {
 		}
 	}
 
-	// Pull in modules required by the selection (e.g. ci → lint/test).
+	// Pull in modules required by the selection (ci pulls in lint and test).
 	selected = modules.ResolveRequires(applicable, selected)
 
 	var chosen []modules.Module
@@ -69,7 +69,7 @@ func runInit(assumeYes bool) error {
 		}
 	}
 	if len(chosen) == 0 {
-		return errors.New("no modules selected — nothing to write")
+		return errors.New("no modules selected - nothing to write")
 	}
 
 	out, err := scaffold.Compose(p, chosen)

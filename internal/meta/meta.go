@@ -1,7 +1,6 @@
-// Package meta dispatches `@`-sigil meta-commands — handled by justx, never
-// passed to `just`. v1 ships `@init`; `@help` and `@version` are cheap built-ins.
-// The meta surface is built on urfave/cli/v3 so each command (and future ones
-// like @add/@upgrade/@doctor) gets its own flags and help for free.
+// Package meta dispatches `@`-sigil meta-commands, which justx handles itself
+// and never passes to `just`. It is built on urfave/cli/v3 so each command gets
+// its own flags and help.
 package meta
 
 import (
@@ -14,7 +13,7 @@ import (
 
 // Version is the justx version. Stays 0.x until `@upgrade` lands: every
 // generated justfile carries a fence telling the user to run it, so the
-// provenance contract is not actually honored yet.
+// provenance contract is not honored yet.
 const Version = "0.2.1"
 
 // Run handles an `@`-sigil meta invocation. args[0] is the meta-command
@@ -35,8 +34,8 @@ func newRootCommand() *cli.Command {
 		Name:    "justx",
 		Usage:   "the justfile companion",
 		Version: Version,
-		// We run our own `@`-sigil dispatch, so suppress urfave's auto help/version
-		// commands and flags — the surface is the `@`-prefixed commands below.
+		// Dispatch is by `@` sigil, so urfave's own help and version commands and
+		// flags are hidden in favor of @help and @version below.
 		HideHelp:    true,
 		HideVersion: true,
 		Commands: []*cli.Command{

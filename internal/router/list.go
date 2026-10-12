@@ -33,7 +33,7 @@ func reverseTranslateSummary(input string, cfg config) string {
 	return reverseName(input, cfg)
 }
 
-// reverseLine rewrites the recipe name on one output line (mapped →
+// reverseLine rewrites the recipe name on one output line (mapped to
 // expressive), then adds compensating spaces before the comment marker so
 // columns stay aligned. The name is the first word after the indent; lines
 // without an indent (the header) and `[group]` headings are left alone.

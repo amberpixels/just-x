@@ -147,7 +147,7 @@ func goModules() []Module {
 			Title:    "aggregate checks (lint + test)",
 			Detect:   always,
 			Requires: []string{modLint, modTest},
-			// Deliberately no fmt: CI verifies, it does not rewrite the tree it
+			// No fmt: CI verifies, it does not rewrite the tree it
 			// was handed. Formatting problems still fail this recipe, because
 			// linting reports them as ordinary findings.
 			Recipes: "# run all checks - read-only, safe for CI\nci: lint test\n",
