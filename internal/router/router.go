@@ -105,11 +105,16 @@ func buildArgs(args []string, cfg config) []string {
 
 // translate rewrites a recipe name's special characters into their configured
 // replacements. Order (bang, question, colon) matches the original tool.
+// `::` is just's own module path separator, so it is kept and only the
+// names around it are translated.
 func translate(name string, cfg config) string {
-	name = replaceAll(name, "!", cfg.bang)
-	name = replaceAll(name, "?", cfg.question)
-	name = replaceAll(name, ":", cfg.colon)
-	return name
+	segments := strings.Split(name, "::")
+	for i, s := range segments {
+		s = replaceAll(s, "!", cfg.bang)
+		s = replaceAll(s, "?", cfg.question)
+		segments[i] = replaceAll(s, ":", cfg.colon)
+	}
+	return strings.Join(segments, "::")
 }
 
 // isVarAssignment matches the bash glob [A-Za-z_]*=* : starts with a letter or
