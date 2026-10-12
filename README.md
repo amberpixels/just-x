@@ -133,7 +133,8 @@ j ready?           # green ci + tidy modules + clean tree
 
 The blocks between the `# >>> justx:<id>` fences were written by `j @init`; everything below
 them is hand-written. Linting comes from [standardgo](https://github.com/amberpixels/standardgo),
-pinned as a `tool` dependency in `go.mod` - there is no local `.golangci.yml`.
+pinned as a `tool` dependency in `tools/go.mod`, a separate module so its dependencies stay out
+of the main `go.mod`. There is no local `.golangci.yml`.
 
 ## Uninstall
 

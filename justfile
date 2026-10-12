@@ -7,23 +7,21 @@
 # Default recipe: format (rewrites, decides nothing; `just fix` is the mutable one)
 default: fmt
 
-# >>> justx:fmt (managed) — `j @upgrade` re-syncs; remove these fences to take over
+# Dev tools are pinned in tools/go.mod, a separate module, so their dependencies stay out of
+# the main go.mod. fmt / lint / fix are taken over from the managed blocks for that reason.
+tool := "go tool -modfile=tools/go.mod"
+
 # format Go code - rewrites to canonical form
 fmt:
-    go tool standardgo fmt ./...
-# <<< justx:fmt
+    {{tool}} standardgo fmt ./...
 
-# >>> justx:lint (managed) — `j @upgrade` re-syncs; remove these fences to take over
 # lint Go code - reports findings, changes nothing
 lint:
-    go tool standardgo ./...
-# <<< justx:lint
+    {{tool}} standardgo ./...
 
-# >>> justx:fix (managed) — `j @upgrade` re-syncs; remove these fences to take over
 # auto-fix what can be fixed - run on a clean tree and read the diff
 fix:
-    go tool standardgo ./... --fix
-# <<< justx:fix
+    {{tool}} standardgo ./... --fix
 
 # >>> justx:test (managed) — `j @upgrade` re-syncs; remove these fences to take over
 # run tests
@@ -46,9 +44,10 @@ ci: lint test
 # --- touches it). Recipes are named in the mapped form and typed in the
 # --- expressive one: `demo--list` is invoked as `j demo:list`.
 
-# Keep go.mod/go.sum tidy - what `j ready?` tells you to run
+# Keep go.mod and tools/go.mod tidy - what `j ready?` tells you to run
 tidy:
     go mod tidy
+    cd tools && go mod tidy
 
 # Install justx into GOPATH/bin - rebuilds the binary your `j` alias runs
 install:
@@ -99,7 +98,7 @@ ready-q: ci         # <- call with: j ready?
     #!/usr/bin/env bash
     set -uo pipefail
     rc=0
-    if go mod tidy -diff >/dev/null 2>&1; then
+    if go mod tidy -diff >/dev/null 2>&1 && (cd tools && go mod tidy -diff >/dev/null 2>&1); then
         echo "✓ go.mod / go.sum tidy"
     else
         echo "✗ go.mod / go.sum need \`just tidy\`"; rc=1
