@@ -22,6 +22,16 @@ func TestTranslate(t *testing.T) {
 		{"mixed", "app:dev!", defaultCfg, "app--dev-x"},
 		{"custom bang", "dev!", config{bang: "-bang", question: "-q", colon: "--"}, "dev-bang"},
 		{"custom colon", "app:build", config{bang: "-x", question: "-q", colon: "__"}, "app__build"},
+		{"module path untouched", "cli::fmt", defaultCfg, "cli::fmt"},
+		{"colon outside module", "lint:go", defaultCfg, "lint--go"},
+		{"colon inside module segment", "cli::lint:go", defaultCfg, "cli::lint--go"},
+		{"bang inside module segment", "cli::dev!", defaultCfg, "cli::dev-x"},
+		{
+			"module path with custom colon",
+			"cli::lint:go",
+			config{bang: "-x", question: "-q", colon: "__"},
+			"cli::lint__go",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -66,6 +76,7 @@ func TestBuildArgs(t *testing.T) {
 		{"plain recipe with args", []string{"plain", "mytarget"}, []string{"plain", "mytarget"}},
 		{"translate bang recipe", []string{"greet!", "mytarget"}, []string{"greet-x", "mytarget"}},
 		{"translate colon recipe", []string{"app:build"}, []string{"app--build"}},
+		{"module recipe with args", []string{"cli::lint:go", "x"}, []string{"cli::lint--go", "x"}},
 		{
 			"var override + translated recipe + args",
 			[]string{"my_var=hello", "greet!", "mytarget"},
